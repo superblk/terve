@@ -1,0 +1,19 @@
+[package]
+name    = "terve"
+version = "0.1.0"
+authors = ["Jukka Palomäki <jukka@jpalomaki.fi>"]
+edition = "2018"
+
+[dependencies]
+regex     = "1.5.3"
+argh      = "0.1.4"
+reqwest   = { version = "0.11.3", default-features = false, features = ["rustls-tls", "json"] }
+zip       = "0.5.12"
+tempfile  = "3.2.0"
+home      = "0.5.3"
+tokio     = { version = "1.5.0", features = ["full"] }
+
+[profile.release]
+codegen-units = 1
+lto           = true
+panic         = "abort"
