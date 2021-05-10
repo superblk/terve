@@ -1,6 +1,7 @@
 use argh::FromArgs;
 use home::home_dir;
 use regex::Regex;
+use reqwest::Client;
 use std::{error::Error, io::Cursor, process};
 use std::{
     fs::{create_dir_all, read_link, remove_file, File},
@@ -17,13 +18,14 @@ use zip::ZipArchive;
 // TODO: implement SHA256 validation
 // TODO: support macos
 // TODO: tests
-// TODO: -v flag (verbose)
 // TODO: show which versions are installed (in list)
-// TODO: support .terraform-version
-// TODO: support .terragrunt-version
 // TODO: implement GPG verification (terraform)
 
+static HTTP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
+
 static TF_RELEASES_URL: &str = "https://releases.hashicorp.com/terraform/";
+
+static TG_RELEASES_URL: &str = "https://api.github.com/repos/gruntwork-io/terragrunt/releases";
 
 #[tokio::main]
 async fn main() {
@@ -48,19 +50,22 @@ async fn run() -> Result<String, Box<dyn Error>> {
                 (Action::LIST, Binary::TERRAFORM, version_opt) => {
                     do_list_terraform_versions(version_opt).await
                 }
+                (Action::LIST, Binary::TERRAGRUNT, version_opt) => {
+                    do_list_terragrunt_versions(version_opt).await
+                }
                 (Action::INSTALL, Binary::TERRAFORM, Some(version)) => {
                     do_install_terraform_version(version, dot_dir_path).await
                 }
-                (Action::USE, Binary::TERRAFORM, Some(version)) => {
-                    do_use_terraform_version(version, dot_dir_path).await
+                (Action::SELECT, Binary::TERRAFORM, Some(version)) => {
+                    do_select_terraform_version(version, dot_dir_path)
                 }
                 (Action::REMOVE, Binary::TERRAFORM, Some(version)) => {
-                    do_remove_terraform_version(version, dot_dir_path).await
+                    do_remove_terraform_version(version, dot_dir_path)
                 }
-                _ => Err("invalid arguments. Run 'terve --help' for usage".into()),
+                _ => Err("Invalid arguments. Run 'terve --help' for usage".into()),
             }
         }
-        None => Err("unable to resolve user home directory".into()),
+        None => Err("Unable to resolve user home directory".into()),
     }
 }
 
@@ -71,8 +76,20 @@ fn create_dot_dir(home_dir: PathBuf) -> Result<String, Box<dyn Error>> {
     Ok(dot_dir_path)
 }
 
+fn new_reqwest_client() -> Result<Client, Box<dyn Error>> {
+    let client = Client::builder().user_agent(HTTP_USER_AGENT).build()?;
+    Ok(client)
+}
+
 async fn do_list_terraform_versions(version_opt: Option<String>) -> Result<String, Box<dyn Error>> {
-    let releases_html = reqwest::get(TF_RELEASES_URL).await?.text().await?;
+    let http_client = new_reqwest_client()?;
+    let http_response = http_client
+        .get(TF_RELEASES_URL)
+        .header("Accept", "text/html")
+        .send()
+        .await?
+        .error_for_status()?;
+    let releases_html = http_response.text().await?;
     let semver_regex = Regex::new(r"[0-9]+\.[0-9]+\.[0-9]+").unwrap();
     let version_prefix = version_opt.unwrap_or("".to_string());
     let mut versions: Vec<&str> = semver_regex
@@ -88,6 +105,20 @@ async fn do_list_terraform_versions(version_opt: Option<String>) -> Result<Strin
     Ok(result)
 }
 
+async fn do_list_terragrunt_versions(
+    version_opt: Option<String>,
+) -> Result<String, Box<dyn Error>> {
+    let http_client = new_reqwest_client()?;
+    let http_response = http_client
+        .get(TG_RELEASES_URL)
+        .header("Accept", "application/vnd.github.v3+json")
+        .send()
+        .await?
+        .error_for_status()?;
+    let releases_json = http_response.text().await?;
+    Ok(releases_json)
+}
+
 async fn do_install_terraform_version(
     version: String,
     dot_dir_path: String,
@@ -96,7 +127,14 @@ async fn do_install_terraform_version(
         "{0}{1}/terraform_{1}_linux_amd64.zip",
         TF_RELEASES_URL, version
     );
-    let zip_file_bytes = reqwest::get(download_url).await?.bytes().await?;
+    let http_client = new_reqwest_client()?;
+    let http_response = http_client
+        .get(download_url)
+        .header("Accept", "application/vnd.github.v3+json")
+        .send()
+        .await?
+        .error_for_status()?;
+    let zip_file_bytes = http_response.bytes().await?;
     let mut cursor = Cursor::new(zip_file_bytes);
     let mut temp_zip_file = tempfile::tempfile()?;
     copy(&mut cursor, &mut temp_zip_file)?;
@@ -115,14 +153,14 @@ async fn do_install_terraform_version(
     Ok(format!("Installed terraform {}", version))
 }
 
-async fn do_use_terraform_version(
+fn do_select_terraform_version(
     version: String,
     dot_dir_path: String,
 ) -> Result<String, Box<dyn Error>> {
     let bin_path = format!("{}/opt/terraform_{}", dot_dir_path, version);
     if !Path::new(&bin_path).exists() {
         Err(format!(
-            "terraform version {0} is not installed. Run 'terve install terraform {0}' first",
+            "Terraform version {0} is not installed. Run 'terve install terraform {0}' first",
             version
         ))?
     }
@@ -137,7 +175,7 @@ async fn do_use_terraform_version(
     Ok(format!("Using terraform {}", version))
 }
 
-async fn do_remove_terraform_version(
+fn do_remove_terraform_version(
     version: String,
     dot_dir_path: String,
 ) -> Result<String, Box<dyn Error>> {
@@ -172,7 +210,7 @@ struct Args {
 enum Action {
     LIST,
     INSTALL,
-    USE,
+    SELECT,
     REMOVE,
 }
 
@@ -188,9 +226,11 @@ impl FromStr for Action {
         match a {
             "l" | "list" => Ok(Action::LIST),
             "i" | "install" => Ok(Action::INSTALL),
-            "u" | "use" => Ok(Action::USE),
+            "s" | "select" => Ok(Action::SELECT),
             "r" | "remove" => Ok(Action::REMOVE),
-            _ => Err(format!("action must be one of: l[ist], i[nstall], u[se], r[remove]")),
+            _ => Err(format!(
+                "action must be one of: l[ist], i[nstall], s[elect] or r[remove]"
+            )),
         }
     }
 }
@@ -202,7 +242,9 @@ impl FromStr for Binary {
         match a {
             "tf" | "terraform" => Ok(Binary::TERRAFORM),
             "tg" | "terragrunt" => Ok(Binary::TERRAGRUNT),
-            _ => Err(format!("binary must be one of: tf (alias: terraform), tg (alias: terragrunt)")),
+            _ => Err(format!(
+                "binary must be one of: tf (alias: terraform) or tg (alias: terragrunt)"
+            )),
         }
     }
 }
