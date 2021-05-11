@@ -13,6 +13,7 @@ use std::{
 };
 use std::{path::PathBuf, str::FromStr};
 use zip::ZipArchive;
+use serde::Deserialize;
 
 // TODO: terragrunt
 // TODO: implement SHA256 validation
@@ -21,11 +22,16 @@ use zip::ZipArchive;
 // TODO: show which versions are installed (in list)
 // TODO: implement GPG verification (terraform)
 
-static HTTP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
-
 static TF_RELEASES_URL: &str = "https://releases.hashicorp.com/terraform/";
 
 static TG_RELEASES_URL: &str = "https://api.github.com/repos/gruntwork-io/terragrunt/releases";
+
+static HTTP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
+
+#[derive(Deserialize)]
+struct Release {
+    tag_name: String,
+}
 
 #[tokio::main]
 async fn main() {
@@ -48,10 +54,10 @@ async fn run() -> Result<String, Box<dyn Error>> {
             let dot_dir_path = create_dot_dir(h)?;
             match (args.action, args.binary, args.version) {
                 (Action::LIST, Binary::TERRAFORM, version_opt) => {
-                    do_list_terraform_versions(version_opt).await
+                    do_list_terraform_versions(version_opt.unwrap_or("".to_string())).await
                 }
                 (Action::LIST, Binary::TERRAGRUNT, version_opt) => {
-                    do_list_terragrunt_versions(version_opt).await
+                    do_list_terragrunt_versions(version_opt.unwrap_or("".to_string())).await
                 }
                 (Action::INSTALL, Binary::TERRAFORM, Some(version)) => {
                     do_install_terraform_version(version, dot_dir_path).await
@@ -81,7 +87,7 @@ fn new_reqwest_client() -> Result<Client, Box<dyn Error>> {
     Ok(client)
 }
 
-async fn do_list_terraform_versions(version_opt: Option<String>) -> Result<String, Box<dyn Error>> {
+async fn do_list_terraform_versions(version_prefix: String) -> Result<String, Box<dyn Error>> {
     let http_client = new_reqwest_client()?;
     let http_response = http_client
         .get(TF_RELEASES_URL)
@@ -91,7 +97,6 @@ async fn do_list_terraform_versions(version_opt: Option<String>) -> Result<Strin
         .error_for_status()?;
     let releases_html = http_response.text().await?;
     let semver_regex = Regex::new(r"[0-9]+\.[0-9]+\.[0-9]+").unwrap();
-    let version_prefix = version_opt.unwrap_or("".to_string());
     let mut versions: Vec<&str> = semver_regex
         .find_iter(&releases_html)
         .map(|mat| mat.as_str())
@@ -106,7 +111,7 @@ async fn do_list_terraform_versions(version_opt: Option<String>) -> Result<Strin
 }
 
 async fn do_list_terragrunt_versions(
-    version_opt: Option<String>,
+    version_prefix: String,
 ) -> Result<String, Box<dyn Error>> {
     let http_client = new_reqwest_client()?;
     let http_response = http_client
@@ -115,8 +120,13 @@ async fn do_list_terragrunt_versions(
         .send()
         .await?
         .error_for_status()?;
-    let releases_json = http_response.text().await?;
-    Ok(releases_json)
+    let releases = http_response.json::<Vec<Release>>().await?;
+    let versions: Vec<&str> = releases.iter().map(|r| r.tag_name.trim_start_matches('v')).filter(|v| v.starts_with(version_prefix.as_str())).collect();
+    let result = match versions.len() {
+        0 => "No matching terragrunt versions found".to_string(),
+        _ => versions.join("\n") ,
+    };
+    Ok(result)
 }
 
 async fn do_install_terraform_version(
