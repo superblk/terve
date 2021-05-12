@@ -2,7 +2,9 @@ use argh::FromArgs;
 use home::home_dir;
 use regex::Regex;
 use reqwest::Client;
+use serde::Deserialize;
 use std::{error::Error, io::Cursor, process};
+use std::{fmt::Display, path::PathBuf, str::FromStr};
 use std::{
     fs::{create_dir_all, read_link, remove_file, File},
     path::Path,
@@ -11,11 +13,8 @@ use std::{
     fs::{set_permissions, Permissions},
     io::copy,
 };
-use std::{path::PathBuf, str::FromStr};
 use zip::ZipArchive;
-use serde::Deserialize;
 
-// TODO: terragrunt
 // TODO: implement SHA256 validation
 // TODO: support macos
 // TODO: tests
@@ -24,12 +23,15 @@ use serde::Deserialize;
 
 static TF_RELEASES_URL: &str = "https://releases.hashicorp.com/terraform/";
 
-static TG_RELEASES_URL: &str = "https://api.github.com/repos/gruntwork-io/terragrunt/releases";
+static TG_RELEASES_API_URL: &str = "https://api.github.com/repos/gruntwork-io/terragrunt/releases";
+
+static TG_RELEASES_DOWNLOAD_URL: &str =
+    "https://github.com/gruntwork-io/terragrunt/releases/download/";
 
 static HTTP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
 
 #[derive(Deserialize)]
-struct Release {
+struct GitHubRelease {
     tag_name: String,
 }
 
@@ -54,25 +56,32 @@ async fn run() -> Result<String, Box<dyn Error>> {
             let dot_dir_path = create_dot_dir(h)?;
             match (args.action, args.binary, args.version) {
                 (Action::LIST, Binary::TERRAFORM, version_opt) => {
-                    do_list_terraform_versions(version_opt.unwrap_or("".to_string())).await
+                    list_terraform_versions(as_prefix(version_opt)).await
                 }
                 (Action::LIST, Binary::TERRAGRUNT, version_opt) => {
-                    do_list_terragrunt_versions(version_opt.unwrap_or("".to_string())).await
+                    list_terragrunt_versions(as_prefix(version_opt)).await
                 }
                 (Action::INSTALL, Binary::TERRAFORM, Some(version)) => {
-                    do_install_terraform_version(version, dot_dir_path).await
+                    install_terraform_version(version, dot_dir_path).await
                 }
-                (Action::SELECT, Binary::TERRAFORM, Some(version)) => {
-                    do_select_terraform_version(version, dot_dir_path)
+                (Action::INSTALL, Binary::TERRAGRUNT, Some(version)) => {
+                    install_terragrunt_version(version, dot_dir_path).await
                 }
-                (Action::REMOVE, Binary::TERRAFORM, Some(version)) => {
-                    do_remove_terraform_version(version, dot_dir_path)
+                (Action::SELECT, binary, Some(version)) => {
+                    select_binary_version(binary, version, dot_dir_path)
+                }
+                (Action::REMOVE, binary, Some(version)) => {
+                    remove_binary_version(binary, version, dot_dir_path)
                 }
                 _ => Err("Invalid arguments. Run 'terve --help' for usage".into()),
             }
         }
         None => Err("Unable to resolve user home directory".into()),
     }
+}
+
+fn as_prefix(version_opt: Option<String>) -> String {
+    version_opt.unwrap_or("".to_string())
 }
 
 fn create_dot_dir(home_dir: PathBuf) -> Result<String, Box<dyn Error>> {
@@ -82,13 +91,12 @@ fn create_dot_dir(home_dir: PathBuf) -> Result<String, Box<dyn Error>> {
     Ok(dot_dir_path)
 }
 
-fn new_reqwest_client() -> Result<Client, Box<dyn Error>> {
-    let client = Client::builder().user_agent(HTTP_USER_AGENT).build()?;
-    Ok(client)
+fn new_http_client() -> Result<Client, Box<dyn Error>> {
+    Ok(Client::builder().user_agent(HTTP_USER_AGENT).build()?)
 }
 
-async fn do_list_terraform_versions(version_prefix: String) -> Result<String, Box<dyn Error>> {
-    let http_client = new_reqwest_client()?;
+async fn list_terraform_versions(version_prefix: String) -> Result<String, Box<dyn Error>> {
+    let http_client = new_http_client()?;
     let http_response = http_client
         .get(TF_RELEASES_URL)
         .header("Accept", "text/html")
@@ -110,26 +118,39 @@ async fn do_list_terraform_versions(version_prefix: String) -> Result<String, Bo
     Ok(result)
 }
 
-async fn do_list_terragrunt_versions(
-    version_prefix: String,
-) -> Result<String, Box<dyn Error>> {
-    let http_client = new_reqwest_client()?;
-    let http_response = http_client
-        .get(TG_RELEASES_URL)
-        .header("Accept", "application/vnd.github.v3+json")
-        .send()
-        .await?
-        .error_for_status()?;
-    let releases = http_response.json::<Vec<Release>>().await?;
-    let versions: Vec<&str> = releases.iter().map(|r| r.tag_name.trim_start_matches('v')).filter(|v| v.starts_with(version_prefix.as_str())).collect();
+async fn list_terragrunt_versions(version_prefix: String) -> Result<String, Box<dyn Error>> {
+    let http_client = new_http_client()?;
+    let mut releases: Vec<GitHubRelease> = Vec::new();
+    // Max out at 1000 most recent releases
+    for page_num in 1..=10 {
+        let http_response = http_client
+            .get(TG_RELEASES_API_URL)
+            .header("Accept", "application/vnd.github.v3+json")
+            .query(&[("per_page", "100")])
+            .query(&[("page", page_num.to_string().as_str())])
+            .send()
+            .await?
+            .error_for_status()?;
+        let mut page = http_response.json::<Vec<GitHubRelease>>().await?;
+        let num_results = page.len();
+        releases.append(&mut page);
+        if num_results < 100 {
+            break
+        }
+    }
+    let versions: Vec<&str> = releases
+        .iter()
+        .map(|r| r.tag_name.trim_start_matches('v'))
+        .filter(|v| v.starts_with(version_prefix.as_str()))
+        .collect();
     let result = match versions.len() {
         0 => "No matching terragrunt versions found".to_string(),
-        _ => versions.join("\n") ,
+        _ => versions.join("\n"),
     };
     Ok(result)
 }
 
-async fn do_install_terraform_version(
+async fn install_terraform_version(
     version: String,
     dot_dir_path: String,
 ) -> Result<String, Box<dyn Error>> {
@@ -137,7 +158,7 @@ async fn do_install_terraform_version(
         "{0}{1}/terraform_{1}_linux_amd64.zip",
         TF_RELEASES_URL, version
     );
-    let http_client = new_reqwest_client()?;
+    let http_client = new_http_client()?;
     let http_response = http_client
         .get(download_url)
         .header("Accept", "application/vnd.github.v3+json")
@@ -146,9 +167,9 @@ async fn do_install_terraform_version(
         .error_for_status()?;
     let zip_file_bytes = http_response.bytes().await?;
     let mut cursor = Cursor::new(zip_file_bytes);
-    let mut temp_zip_file = tempfile::tempfile()?;
-    copy(&mut cursor, &mut temp_zip_file)?;
-    let mut zip_archive = ZipArchive::new(temp_zip_file)?;
+    let mut tmp_zip_file = tempfile::tempfile()?;
+    copy(&mut cursor, &mut tmp_zip_file)?;
+    let mut zip_archive = ZipArchive::new(tmp_zip_file)?;
     let mut binary_in_zip = zip_archive.by_name("terraform")?;
     let bin_path = format!("{}/opt/terraform_{}", dot_dir_path, version);
     let mut bin_file = File::create(&bin_path)?;
@@ -156,52 +177,78 @@ async fn do_install_terraform_version(
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        if let Some(mode) = binary_in_zip.unix_mode() {
-            set_permissions(&bin_path, Permissions::from_mode(mode))?;
-        }
+        set_permissions(&bin_path, Permissions::from_mode(0o755))?;
     }
     Ok(format!("Installed terraform {}", version))
 }
 
-fn do_select_terraform_version(
+async fn install_terragrunt_version(
     version: String,
     dot_dir_path: String,
 ) -> Result<String, Box<dyn Error>> {
-    let bin_path = format!("{}/opt/terraform_{}", dot_dir_path, version);
+    let download_url = format!(
+        "{0}/v{1}/terragrunt_linux_amd64",
+        TG_RELEASES_DOWNLOAD_URL, version
+    );
+    let http_client = new_http_client()?;
+    let http_response = http_client
+        .get(download_url)
+        .header("Accept", "application/octet-stream")
+        .send()
+        .await?
+        .error_for_status()?;
+    let bin_file_bytes = http_response.bytes().await?;
+    let mut cursor = Cursor::new(bin_file_bytes);
+    let bin_path = format!("{}/opt/terragrunt_{}", dot_dir_path, version);
+    let mut bin_file = File::create(&bin_path)?;
+    copy(&mut cursor, &mut bin_file)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        set_permissions(&bin_path, Permissions::from_mode(0o755))?;
+    }
+    Ok(format!("Installed terragrunt {}", version))
+}
+
+fn select_binary_version(
+    binary: Binary,
+    version: String,
+    dot_dir_path: String,
+) -> Result<String, Box<dyn Error>> {
+    let symlink_path = format!("{}/bin/{}", dot_dir_path, binary);
+    let bin_path = format!("{}/opt/{}_{}", dot_dir_path, binary, version);
     if !Path::new(&bin_path).exists() {
         Err(format!(
-            "Terraform version {0} is not installed. Run 'terve install terraform {0}' first",
-            version
+            "{0} version {1} is not installed. Run 'terve install {0} {1}'",
+            binary, version
         ))?
+    }
+    if read_link(&symlink_path).is_ok() {
+        remove_file(&symlink_path)?;
     }
     #[cfg(unix)]
     {
-        let symlink_path = format!("{}/bin/terraform", dot_dir_path);
-        if Path::new(&symlink_path).exists() {
-            remove_file(&symlink_path)?;
-        }
         std::os::unix::fs::symlink(&bin_path, &symlink_path)?;
     }
-    Ok(format!("Using terraform {}", version))
+    Ok(format!("Using {} {}", binary, version))
 }
 
-fn do_remove_terraform_version(
+fn remove_binary_version(
+    binary: Binary,
     version: String,
     dot_dir_path: String,
 ) -> Result<String, Box<dyn Error>> {
-    let bin_path = format!("{}/opt/terraform_{}", dot_dir_path, version);
+    let symlink_path = format!("{}/bin/{}", dot_dir_path, binary);
+    let bin_path = format!("{}/opt/{}_{}", dot_dir_path, binary, version);
     if Path::new(&bin_path).exists() {
-        #[cfg(unix)]
-        {
-            let symlink_path = format!("{}/bin/terraform", dot_dir_path);
-            let symlink_target_path = read_link(&symlink_path)?;
-            remove_file(&bin_path)?;
-            if !symlink_target_path.exists() {
-                remove_file(&symlink_path)?;
-            }
+        remove_file(&bin_path)?;
+        let symlink_is_broken =
+            read_link(&symlink_path).is_ok() && !Path::new(&symlink_path).exists();
+        if symlink_is_broken {
+            remove_file(&symlink_path)?;
         }
     }
-    Ok(format!("Removed terraform {}", version))
+    Ok(format!("Removed {} {}", binary, version))
 }
 
 #[derive(FromArgs)]
@@ -255,6 +302,15 @@ impl FromStr for Binary {
             _ => Err(format!(
                 "binary must be one of: tf (alias: terraform) or tg (alias: terragrunt)"
             )),
+        }
+    }
+}
+
+impl Display for Binary {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            Binary::TERRAFORM => write!(f, "terraform"),
+            Binary::TERRAGRUNT => write!(f, "terragrunt"),
         }
     }
 }
