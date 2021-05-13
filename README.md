@@ -13,7 +13,7 @@ Unified terraform and terragrunt version manager.
 
 ### List
 
-Syntax: `terve l[ist] <binary> [version prefix]`
+Syntax: `terve l[ist] <binary> [spec]`
 
 - `terve list terraform` lists all available terraform versions
 - `terve l tf 0.12` lists all available terraform 0.12.x versions 

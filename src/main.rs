@@ -6,7 +6,7 @@ use serde::Deserialize;
 use std::{error::Error, io::Cursor, process};
 use std::{fmt::Display, path::PathBuf, str::FromStr};
 use std::{
-    fs::{create_dir_all, read_link, remove_file, File},
+    fs::{create_dir_all, read_dir, read_link, remove_file, File},
     path::Path,
 };
 use std::{
@@ -14,12 +14,13 @@ use std::{
     io::copy,
 };
 use zip::ZipArchive;
+use semver::Version;
 
 // TODO: implement SHA256 validation
 // TODO: support macos
 // TODO: tests
-// TODO: show which versions are installed (in list)
 // TODO: implement GPG verification (terraform)
+// TODO: support windows
 
 static TF_RELEASES_URL: &str = "https://releases.hashicorp.com/terraform/";
 
@@ -54,12 +55,15 @@ async fn run() -> Result<String, Box<dyn Error>> {
     match home_dir() {
         Some(h) => {
             let dot_dir_path = create_dot_dir(h)?;
-            match (args.action, args.binary, args.version) {
+            match (args.action, args.binary, args.version_spec) {
+                (Action::LIST, binary, Some(v)) if v == "local" => {
+                    list_installed_versions(binary, dot_dir_path)
+                }
                 (Action::LIST, Binary::TERRAFORM, version_opt) => {
-                    list_terraform_versions(as_prefix(version_opt)).await
+                    list_available_terraform_versions(as_prefix(version_opt)).await
                 }
                 (Action::LIST, Binary::TERRAGRUNT, version_opt) => {
-                    list_terragrunt_versions(as_prefix(version_opt)).await
+                    list_available_terragrunt_versions(as_prefix(version_opt)).await
                 }
                 (Action::INSTALL, Binary::TERRAFORM, Some(version)) => {
                     install_terraform_version(version, dot_dir_path).await
@@ -87,7 +91,8 @@ fn as_prefix(version_opt: Option<String>) -> String {
 fn create_dot_dir(home_dir: PathBuf) -> Result<String, Box<dyn Error>> {
     let dot_dir_path = format!("{}/.terve", home_dir.display());
     create_dir_all(format!("{}/bin", &dot_dir_path))?;
-    create_dir_all(format!("{}/opt", &dot_dir_path))?;
+    create_dir_all(format!("{}/opt/terraform", &dot_dir_path))?;
+    create_dir_all(format!("{}/opt/terragrunt", &dot_dir_path))?;
     Ok(dot_dir_path)
 }
 
@@ -95,7 +100,24 @@ fn new_http_client() -> Result<Client, Box<dyn Error>> {
     Ok(Client::builder().user_agent(HTTP_USER_AGENT).build()?)
 }
 
-async fn list_terraform_versions(version_prefix: String) -> Result<String, Box<dyn Error>> {
+fn list_installed_versions(binary: Binary, dot_dir_path: String) -> Result<String, Box<dyn Error>> {
+    let opt_dir_path = format!("{}/opt/{}", dot_dir_path, binary);
+    let mut installed_versions: Vec<Version> = read_dir(&opt_dir_path)?
+        .filter_map(|r| Some(r.ok()?.path().strip_prefix(&opt_dir_path).ok()?.to_path_buf()))
+        .filter_map(|p| Version::parse(p.display().to_string().as_str()).ok())
+        .collect();
+    installed_versions.sort();
+    installed_versions.reverse();
+    let result = match installed_versions.len() {
+        0 => "No matching terraform versions found".to_string(),
+        _ => installed_versions.into_iter().map(|v| v.to_string()).collect::<Vec<String>>().join("\n"),
+    };
+    Ok(result)
+}
+
+async fn list_available_terraform_versions(
+    version_prefix: String,
+) -> Result<String, Box<dyn Error>> {
     let http_client = new_http_client()?;
     let http_response = http_client
         .get(TF_RELEASES_URL)
@@ -118,7 +140,9 @@ async fn list_terraform_versions(version_prefix: String) -> Result<String, Box<d
     Ok(result)
 }
 
-async fn list_terragrunt_versions(version_prefix: String) -> Result<String, Box<dyn Error>> {
+async fn list_available_terragrunt_versions(
+    version_prefix: String,
+) -> Result<String, Box<dyn Error>> {
     let http_client = new_http_client()?;
     let mut releases: Vec<GitHubRelease> = Vec::new();
     // Max out at 1000 most recent releases
@@ -135,7 +159,7 @@ async fn list_terragrunt_versions(version_prefix: String) -> Result<String, Box<
         let num_results = page.len();
         releases.append(&mut page);
         if num_results < 100 {
-            break
+            break;
         }
     }
     let versions: Vec<&str> = releases
@@ -171,7 +195,7 @@ async fn install_terraform_version(
     copy(&mut cursor, &mut tmp_zip_file)?;
     let mut zip_archive = ZipArchive::new(tmp_zip_file)?;
     let mut binary_in_zip = zip_archive.by_name("terraform")?;
-    let bin_path = format!("{}/opt/terraform_{}", dot_dir_path, version);
+    let bin_path = format!("{}/opt/terraform/{}", dot_dir_path, version);
     let mut bin_file = File::create(&bin_path)?;
     copy(&mut binary_in_zip, &mut bin_file)?;
     #[cfg(unix)]
@@ -199,7 +223,7 @@ async fn install_terragrunt_version(
         .error_for_status()?;
     let bin_file_bytes = http_response.bytes().await?;
     let mut cursor = Cursor::new(bin_file_bytes);
-    let bin_path = format!("{}/opt/terragrunt_{}", dot_dir_path, version);
+    let bin_path = format!("{}/opt/terragrunt/{}", dot_dir_path, version);
     let mut bin_file = File::create(&bin_path)?;
     copy(&mut cursor, &mut bin_file)?;
     #[cfg(unix)]
@@ -216,7 +240,7 @@ fn select_binary_version(
     dot_dir_path: String,
 ) -> Result<String, Box<dyn Error>> {
     let symlink_path = format!("{}/bin/{}", dot_dir_path, binary);
-    let bin_path = format!("{}/opt/{}_{}", dot_dir_path, binary, version);
+    let bin_path = format!("{}/opt/{}/{}", dot_dir_path, binary, version);
     if !Path::new(&bin_path).exists() {
         Err(format!(
             "{0} version {1} is not installed. Run 'terve install {0} {1}'",
@@ -239,7 +263,7 @@ fn remove_binary_version(
     dot_dir_path: String,
 ) -> Result<String, Box<dyn Error>> {
     let symlink_path = format!("{}/bin/{}", dot_dir_path, binary);
-    let bin_path = format!("{}/opt/{}_{}", dot_dir_path, binary, version);
+    let bin_path = format!("{}/opt/{}/{}", dot_dir_path, binary, version);
     if Path::new(&bin_path).exists() {
         remove_file(&bin_path)?;
         let symlink_is_broken =
@@ -261,7 +285,7 @@ struct Args {
     binary: Binary,
 
     #[argh(positional)]
-    version: Option<String>,
+    version_spec: Option<String>,
 }
 
 enum Action {
