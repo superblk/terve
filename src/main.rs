@@ -2,8 +2,9 @@ use argh::FromArgs;
 use home::home_dir;
 use regex::Regex;
 use reqwest::Client;
+use semver::Version;
 use serde::Deserialize;
-use std::{error::Error, io::Cursor, process};
+use std::{error::Error, io::Cursor, process, time::Duration};
 use std::{fmt::Display, path::PathBuf, str::FromStr};
 use std::{
     fs::{create_dir_all, read_dir, read_link, remove_file, File},
@@ -14,33 +15,19 @@ use std::{
     io::copy,
 };
 use zip::ZipArchive;
-use semver::Version;
 
 // TODO: implement SHA256 validation
 // TODO: support macos
 // TODO: tests
-// TODO: implement GPG verification (terraform)
-// TODO: support windows
-
-static TF_RELEASES_URL: &str = "https://releases.hashicorp.com/terraform/";
-
-static TG_RELEASES_API_URL: &str = "https://api.github.com/repos/gruntwork-io/terragrunt/releases";
-
-static TG_RELEASES_DOWNLOAD_URL: &str =
-    "https://github.com/gruntwork-io/terragrunt/releases/download/";
-
-static HTTP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
-
-#[derive(Deserialize)]
-struct GitHubRelease {
-    tag_name: String,
-}
+// TODO: implement GPG verify (terraform)
 
 #[tokio::main]
 async fn main() {
     process::exit(match run().await {
         Ok(msg) => {
-            println!("{}", msg);
+            if !msg.is_empty() {
+                println!("{}", msg);
+            }
             0
         }
         Err(e) => {
@@ -56,25 +43,27 @@ async fn run() -> Result<String, Box<dyn Error>> {
         Some(h) => {
             let dot_dir_path = create_dot_dir(h)?;
             match (args.action, args.binary, args.version_spec) {
-                (Action::LIST, binary, Some(v)) if v == "local" => {
-                    list_installed_versions(binary, dot_dir_path)
+                (Action::LIST, binary, None) => list_installed_versions(binary, dot_dir_path),
+                (Action::LIST, Binary::TERRAFORM, Some(v)) if v == "remote" => {
+                    list_available_terraform_versions().await
                 }
-                (Action::LIST, Binary::TERRAFORM, version_opt) => {
-                    list_available_terraform_versions(as_prefix(version_opt)).await
+                (Action::LIST, Binary::TERRAGRUNT, Some(v)) if v == "remote" => {
+                    list_available_terragrunt_versions().await
                 }
-                (Action::LIST, Binary::TERRAGRUNT, version_opt) => {
-                    list_available_terragrunt_versions(as_prefix(version_opt)).await
-                }
-                (Action::INSTALL, Binary::TERRAFORM, Some(version)) => {
+                (Action::INSTALL, Binary::TERRAFORM, Some(version))
+                    if Version::parse(&version).is_ok() =>
+                {
                     install_terraform_version(version, dot_dir_path).await
                 }
-                (Action::INSTALL, Binary::TERRAGRUNT, Some(version)) => {
+                (Action::INSTALL, Binary::TERRAGRUNT, Some(version))
+                    if Version::parse(&version).is_ok() =>
+                {
                     install_terragrunt_version(version, dot_dir_path).await
                 }
-                (Action::SELECT, binary, Some(version)) => {
+                (Action::SELECT, binary, Some(version)) if Version::parse(&version).is_ok() => {
                     select_binary_version(binary, version, dot_dir_path)
                 }
-                (Action::REMOVE, binary, Some(version)) => {
+                (Action::REMOVE, binary, Some(version)) if Version::parse(&version).is_ok() => {
                     remove_binary_version(binary, version, dot_dir_path)
                 }
                 _ => Err("Invalid arguments. Run 'terve --help' for usage".into()),
@@ -82,10 +71,6 @@ async fn run() -> Result<String, Box<dyn Error>> {
         }
         None => Err("Unable to resolve user home directory".into()),
     }
-}
-
-fn as_prefix(version_opt: Option<String>) -> String {
-    version_opt.unwrap_or("".to_string())
 }
 
 fn create_dot_dir(home_dir: PathBuf) -> Result<String, Box<dyn Error>> {
@@ -96,28 +81,31 @@ fn create_dot_dir(home_dir: PathBuf) -> Result<String, Box<dyn Error>> {
     Ok(dot_dir_path)
 }
 
-fn new_http_client() -> Result<Client, Box<dyn Error>> {
-    Ok(Client::builder().user_agent(HTTP_USER_AGENT).build()?)
-}
-
 fn list_installed_versions(binary: Binary, dot_dir_path: String) -> Result<String, Box<dyn Error>> {
     let opt_dir_path = format!("{}/opt/{}", dot_dir_path, binary);
     let mut installed_versions: Vec<Version> = read_dir(&opt_dir_path)?
-        .filter_map(|r| Some(r.ok()?.path().strip_prefix(&opt_dir_path).ok()?.to_path_buf()))
+        .filter_map(|r| {
+            Some(
+                r.ok()?
+                    .path()
+                    .strip_prefix(&opt_dir_path)
+                    .ok()?
+                    .to_path_buf(),
+            )
+        })
         .filter_map(|p| Version::parse(p.display().to_string().as_str()).ok())
         .collect();
     installed_versions.sort();
     installed_versions.reverse();
-    let result = match installed_versions.len() {
-        0 => "No matching terraform versions found".to_string(),
-        _ => installed_versions.into_iter().map(|v| v.to_string()).collect::<Vec<String>>().join("\n"),
-    };
+    let result = installed_versions
+        .into_iter()
+        .map(|v| v.to_string())
+        .collect::<Vec<String>>()
+        .join("\n");
     Ok(result)
 }
 
-async fn list_available_terraform_versions(
-    version_prefix: String,
-) -> Result<String, Box<dyn Error>> {
+async fn list_available_terraform_versions() -> Result<String, Box<dyn Error>> {
     let http_client = new_http_client()?;
     let http_response = http_client
         .get(TF_RELEASES_URL)
@@ -130,19 +118,12 @@ async fn list_available_terraform_versions(
     let mut versions: Vec<&str> = semver_regex
         .find_iter(&releases_html)
         .map(|mat| mat.as_str())
-        .filter(|v| v.starts_with(version_prefix.as_str()))
         .collect();
     versions.dedup();
-    let result = match versions.len() {
-        0 => "No matching terraform versions found".to_string(),
-        _ => versions.join("\n"),
-    };
-    Ok(result)
+    Ok(versions.join("\n"))
 }
 
-async fn list_available_terragrunt_versions(
-    version_prefix: String,
-) -> Result<String, Box<dyn Error>> {
+async fn list_available_terragrunt_versions() -> Result<String, Box<dyn Error>> {
     let http_client = new_http_client()?;
     let mut releases: Vec<GitHubRelease> = Vec::new();
     // Max out at 1000 most recent releases
@@ -165,13 +146,8 @@ async fn list_available_terragrunt_versions(
     let versions: Vec<&str> = releases
         .iter()
         .map(|r| r.tag_name.trim_start_matches('v'))
-        .filter(|v| v.starts_with(version_prefix.as_str()))
         .collect();
-    let result = match versions.len() {
-        0 => "No matching terragrunt versions found".to_string(),
-        _ => versions.join("\n"),
-    };
-    Ok(result)
+    Ok(versions.join("\n"))
 }
 
 async fn install_terraform_version(
@@ -324,7 +300,7 @@ impl FromStr for Binary {
             "tf" | "terraform" => Ok(Binary::TERRAFORM),
             "tg" | "terragrunt" => Ok(Binary::TERRAGRUNT),
             _ => Err(format!(
-                "binary must be one of: tf (alias: terraform) or tg (alias: terragrunt)"
+                "binary must be one of: tf, tg, terraform, terragrunt"
             )),
         }
     }
@@ -337,4 +313,27 @@ impl Display for Binary {
             Binary::TERRAGRUNT => write!(f, "terragrunt"),
         }
     }
+}
+
+static TF_RELEASES_URL: &str = "https://releases.hashicorp.com/terraform/";
+
+static TG_RELEASES_API_URL: &str = "https://api.github.com/repos/gruntwork-io/terragrunt/releases";
+
+static TG_RELEASES_DOWNLOAD_URL: &str =
+    "https://github.com/gruntwork-io/terragrunt/releases/download/";
+
+static HTTP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
+
+#[derive(Deserialize)]
+struct GitHubRelease {
+    tag_name: String,
+}
+
+fn new_http_client() -> Result<Client, Box<dyn Error>> {
+    let client = Client::builder()
+        .user_agent(HTTP_USER_AGENT)
+        .connect_timeout(Duration::from_secs(10))
+        .https_only(true)
+        .build()?;
+    Ok(client)
 }
