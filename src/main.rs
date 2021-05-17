@@ -4,7 +4,8 @@ use regex::Regex;
 use reqwest::Client;
 use semver::Version;
 use serde::Deserialize;
-use std::{error::Error, io::Cursor, process, time::Duration};
+use sha2::{Digest, Sha256};
+use std::{error::Error, io::{Cursor, Read}, process, time::Duration};
 use std::{fmt::Display, path::PathBuf, str::FromStr};
 use std::{
     fs::{create_dir_all, read_dir, read_link, remove_file, File},
@@ -15,11 +16,6 @@ use std::{
     io::copy,
 };
 use zip::ZipArchive;
-
-// TODO: implement SHA256 validation
-// TODO: support macos
-// TODO: tests
-// TODO: implement GPG verify (terraform)
 
 #[tokio::main]
 async fn main() {
@@ -50,14 +46,10 @@ async fn run() -> Result<String, Box<dyn Error>> {
                 (Action::LIST, Binary::TERRAGRUNT, Some(v)) if v == "remote" => {
                     list_available_terragrunt_versions().await
                 }
-                (Action::INSTALL, Binary::TERRAFORM, Some(version))
-                    if Version::parse(&version).is_ok() =>
-                {
+                (Action::INSTALL, Binary::TERRAFORM, Some(version)) if Version::parse(&version).is_ok() => {
                     install_terraform_version(version, dot_dir_path).await
                 }
-                (Action::INSTALL, Binary::TERRAGRUNT, Some(version))
-                    if Version::parse(&version).is_ok() =>
-                {
+                (Action::INSTALL, Binary::TERRAGRUNT, Some(version)) if Version::parse(&version).is_ok() => {
                     install_terragrunt_version(version, dot_dir_path).await
                 }
                 (Action::SELECT, binary, Some(version)) if Version::parse(&version).is_ok() => {
@@ -107,20 +99,22 @@ fn list_installed_versions(binary: Binary, dot_dir_path: String) -> Result<Strin
 
 async fn list_available_terraform_versions() -> Result<String, Box<dyn Error>> {
     let http_client = new_http_client()?;
-    let http_response = http_client
+    let releases_html = http_client
         .get(TF_RELEASES_URL)
         .header("Accept", "text/html")
         .send()
         .await?
-        .error_for_status()?;
-    let releases_html = http_response.text().await?;
+        .error_for_status()?
+        .text()
+        .await?;
     let semver_regex = Regex::new(r"[0-9]+\.[0-9]+\.[0-9]+").unwrap();
     let mut versions: Vec<&str> = semver_regex
         .find_iter(&releases_html)
         .map(|mat| mat.as_str())
         .collect();
     versions.dedup();
-    Ok(versions.join("\n"))
+    let result = versions.join("\n");
+    Ok(result)
 }
 
 async fn list_available_terragrunt_versions() -> Result<String, Box<dyn Error>> {
@@ -128,15 +122,16 @@ async fn list_available_terragrunt_versions() -> Result<String, Box<dyn Error>> 
     let mut releases: Vec<GitHubRelease> = Vec::new();
     // Max out at 1000 most recent releases
     for page_num in 1..=10 {
-        let http_response = http_client
+        let mut page: Vec<GitHubRelease> = http_client
             .get(TG_RELEASES_API_URL)
             .header("Accept", "application/vnd.github.v3+json")
             .query(&[("per_page", "100")])
             .query(&[("page", page_num.to_string().as_str())])
             .send()
             .await?
-            .error_for_status()?;
-        let mut page = http_response.json::<Vec<GitHubRelease>>().await?;
+            .error_for_status()?
+            .json()
+            .await?;
         let num_results = page.len();
         releases.append(&mut page);
         if num_results < 100 {
@@ -147,28 +142,49 @@ async fn list_available_terragrunt_versions() -> Result<String, Box<dyn Error>> 
         .iter()
         .map(|r| r.tag_name.trim_start_matches('v'))
         .collect();
-    Ok(versions.join("\n"))
+    let result = versions.join("\n");
+    Ok(result)
 }
 
 async fn install_terraform_version(
     version: String,
     dot_dir_path: String,
 ) -> Result<String, Box<dyn Error>> {
-    let download_url = format!(
+    let zip_download_url = format!(
         "{0}{1}/terraform_{1}_linux_amd64.zip",
         TF_RELEASES_URL, version
     );
+    let sha256sums_download_url = format!("{0}{1}/terraform_{1}_SHA256SUMS", TF_RELEASES_URL, version);
     let http_client = new_http_client()?;
-    let http_response = http_client
-        .get(download_url)
-        .header("Accept", "application/vnd.github.v3+json")
+    let zip_file_bytes = http_client
+        .get(zip_download_url)
+        .header("Accept", "application/octet-stream")
         .send()
         .await?
-        .error_for_status()?;
-    let zip_file_bytes = http_response.bytes().await?;
-    let mut cursor = Cursor::new(zip_file_bytes);
+        .error_for_status()?
+        .bytes()
+        .await?;
+    let sha256_sums = http_client
+        .get(sha256sums_download_url)
+        .header("Accept", "text/plain")
+        .send()
+        .await?
+        .error_for_status()?
+        .text()
+        .await?;
+    let shasum_regex = Regex::new(r"([a-f0-9]{64}).+_linux_amd64.zip").unwrap();
+    let expected_sha256_sum = shasum_regex
+        .captures(&sha256_sums)
+        .unwrap()
+        .get(1)
+        .unwrap()
+        .as_str();
+    let actual_sha256_sum = sha256sum(&mut Cursor::new(&zip_file_bytes))?;
+    if &actual_sha256_sum != expected_sha256_sum {
+        Err(format!("File checksum mismatch, expected '{}', got '{}'", expected_sha256_sum, actual_sha256_sum))?;
+    }
     let mut tmp_zip_file = tempfile::tempfile()?;
-    copy(&mut cursor, &mut tmp_zip_file)?;
+    copy(&mut Cursor::new(&zip_file_bytes), &mut tmp_zip_file)?;
     let mut zip_archive = ZipArchive::new(tmp_zip_file)?;
     let mut binary_in_zip = zip_archive.by_name("terraform")?;
     let bin_path = format!("{}/opt/terraform/{}", dot_dir_path, version);
@@ -186,22 +202,42 @@ async fn install_terragrunt_version(
     version: String,
     dot_dir_path: String,
 ) -> Result<String, Box<dyn Error>> {
-    let download_url = format!(
+    let bin_download_url = format!(
         "{0}/v{1}/terragrunt_linux_amd64",
         TG_RELEASES_DOWNLOAD_URL, version
     );
+    let sha256sums_download_url = format!("{0}/v{1}/SHA256SUMS", TG_RELEASES_DOWNLOAD_URL, version);
     let http_client = new_http_client()?;
-    let http_response = http_client
-        .get(download_url)
+    let bin_file_bytes = http_client
+        .get(bin_download_url)
         .header("Accept", "application/octet-stream")
         .send()
         .await?
-        .error_for_status()?;
-    let bin_file_bytes = http_response.bytes().await?;
-    let mut cursor = Cursor::new(bin_file_bytes);
+        .error_for_status()?
+        .bytes()
+        .await?;
+    let sha256_sums = http_client
+        .get(sha256sums_download_url)
+        .header("Accept", "text/plain")
+        .send()
+        .await?
+        .error_for_status()?
+        .text()
+        .await?;
+    let sha256sum_regex = Regex::new(r"([a-f0-9]{64})\s+terragrunt_linux_amd64")?;
+    let expected_sha256_sum = sha256sum_regex
+        .captures(&sha256_sums)
+        .unwrap()
+        .get(1)
+        .unwrap()
+        .as_str();
+    let actual_sha256_sum = sha256sum(&mut Cursor::new(&bin_file_bytes))?;
+    if &actual_sha256_sum != expected_sha256_sum {
+        Err(format!("Binary sha256 checksum mismatch, expected '{}', got '{}'", expected_sha256_sum, actual_sha256_sum))?;
+    }
     let bin_path = format!("{}/opt/terragrunt/{}", dot_dir_path, version);
     let mut bin_file = File::create(&bin_path)?;
-    copy(&mut cursor, &mut bin_file)?;
+    copy(&mut Cursor::new(&bin_file_bytes), &mut bin_file)?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -336,4 +372,11 @@ fn new_http_client() -> Result<Client, Box<dyn Error>> {
         .https_only(true)
         .build()?;
     Ok(client)
+}
+
+fn sha256sum<R>(mut reader: &mut R) -> Result<String, Box<dyn Error>> where R: Read {
+    let mut sha256 = Sha256::new();
+    copy(&mut reader, &mut sha256)?;
+    let result = sha256.finalize();
+    Ok(hex::encode(result))
 }
