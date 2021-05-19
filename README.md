@@ -1,34 +1,37 @@
 # Terve 👋
 
-Unified terraform and terragrunt version manager.
+Unified and minimal terraform and terragrunt version manager.
 
-NOTE: this is an early development version so no releases yet. :sob:
+WARNING: this is an early development version, so no releases yet. :sob:
 
 ## Setup
 
-1. Build terve for your operating system
-1. Install terve in `PATH`, e.g. in `/usr/local/bin`
+1. Build `terve` for your operating system
+1. Install it in `PATH`, e.g. in `/usr/local/bin`
 1. Add directory `~/.terve/bin` to `PATH` (using e.g. `.bashrc`)
 
 ## Usage
 
-NOTE: `<binary>` is one of:
+Legend: `<binary>` is one of:
 
-- `tf` (or: `terraform`)
-- `tg` (or: `terragrunt`)
+- `tf` (long form: `terraform`)
+- `tg` (long form: `terragrunt`)
 
 ### List
 
-Syntax: `terve l[ist] <binary> [spec]` where spec is `r[emote]`
+Lists installed and available versions.
 
-- `terve l tf` lists installed terraform versions
-- `terve l tg` lists installed terragrunt versions
+Syntax: `terve l[ist] <binary> [spec]` where `spec` is `r[emote]`
+
+- `terve l tf` lists installed (local) terraform versions
 - `terve l tf r` lists available (remote) terraform versions
 - `terve l tg r | grep 0.29.` lists available terragrunt 0.29.x versions
 
 NOTE: list remote for terragrunt uses GitHub API which is rate-limited!
 
 ### Install
+
+Installs a specific version.
 
 Syntax: `terve i[nstall] <binary> <semver>`
 
@@ -39,6 +42,8 @@ Syntax: `terve i[nstall] <binary> <semver>`
 
 ### Select
 
+Selects a specific version for use.
+
 Syntax: `terve s[elect] <binary> <semver>`
 
 - `terve s tf 0.12.31` selects terraform version 0.12.31
@@ -48,12 +53,14 @@ NOTE: selected version must be installed first
 
 ### Remove
 
+Removes a specific version.
+
 Syntax: `terve r[emove] <binary> <semver>`
 
 - `terve r tf 0.12.31` removes terraform version 0.12.31
-- `terve l tf | grep 0.11. | xargs -n1 -P4 terve r tf` removes all installed terraform 0.11.x versions
+- `terve l tf | grep 0.11. | xargs -n1 terve r tf` removes all installed terraform 0.11.x versions
 
-NOTE: does not fail if version is not installed
+NOTE: remove does not fail if version is not installed
 
 ## Development
 
@@ -63,6 +70,7 @@ To build the binary, run `cargo build --release`. Binary is then found in `targe
 
 ## TODOs
 
-- tests
-- GH workflow build (matrix -> linux/darwin)
-- implement GPG verify (terraform)
+- Tests! (assert_cmd)
+- CI: GitHub workflow release (-> linux/darwin)
+- Security: implement GPG verify (terraform)
+- OS support: windows?
