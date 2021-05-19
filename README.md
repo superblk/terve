@@ -1,6 +1,6 @@
 # Terve 👋
 
-Unified and minimal terraform and terragrunt version manager.
+Unified terraform and terragrunt version manager.
 
 WARNING: this is an early development version, so no releases yet. :sob:
 
