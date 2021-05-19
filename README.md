@@ -2,7 +2,7 @@
 
 Unified terraform and terragrunt version manager.
 
-WARNING: this is an early development version, so no releases yet. :sob:
+WARNING: this is in _early_ development, so no releases yet. :sob:
 
 ## Setup
 
@@ -19,7 +19,7 @@ Legend: `<binary>` is one of:
 
 ### List
 
-Lists installed and available versions.
+Lists installed or available versions.
 
 Syntax: `terve l[ist] <binary> [spec]` where `spec` is `r[emote]`
 
@@ -70,7 +70,7 @@ To build the binary, run `cargo build --release`. Binary is then found in `targe
 
 ## TODOs
 
-- Tests! (assert_cmd)
+- QA: add tests!
 - CI: GitHub workflow release (-> linux/darwin)
 - Security: implement GPG verify (terraform)
 - OS support: windows?

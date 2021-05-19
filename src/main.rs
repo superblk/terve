@@ -5,6 +5,7 @@ use reqwest::blocking::Client;
 use semver::Version;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
+use std::env::consts::OS;
 use std::{
     error::Error,
     io::{Seek, SeekFrom},
@@ -21,7 +22,6 @@ use std::{
     io::copy,
 };
 use zip::ZipArchive;
-use std::env::consts::OS;
 
 fn main() {
     process::exit(match run() {
@@ -42,14 +42,14 @@ type StringOrError = Result<String, Box<dyn Error>>;
 
 fn run() -> StringOrError {
     let args: Args = argh::from_env();
+    let os = match OS {
+        "linux" => "linux",
+        "macos" => "darwin",
+        os => panic!("Unsupported OS: {}", os),
+    };
     match home_dir() {
         Some(home) => {
             let dot_dir = DotDir::init(home)?;
-            let os = match OS {
-                "linux" => "linux",
-                "macos" => "darwin",
-                os => panic!("Unsupported OS: {}", os),
-            };
             match (args.action, args.binary, args.version_spec) {
                 (Action::LIST, binary, None) => list_installed_versions(binary, dot_dir),
                 (Action::LIST, Binary::TERRAFORM, Some(v)) if v == "r" || v == "remote" => {
@@ -166,15 +166,9 @@ fn install_terraform_version(version: String, dot_dir: DotDir, os: &str) -> Stri
     let tmp_zip_file = tempfile::tempfile()?;
     http_get_bytes(&http_client, &file_download_url, &tmp_zip_file)?;
     let shasums = http_get_text(&http_client, &shasums_download_url, "text/plain")?;
-    let shasum_regex = Regex::new(r"([a-f0-9]{64}).+_linux_amd64.zip").unwrap();
-    // TODO: fix
-    let expected_sha256_sum = shasum_regex
-        .captures(&shasums)
-        .unwrap()
-        .get(1)
-        .unwrap()
-        .as_str();
-    check_sha256sum(&tmp_zip_file, &expected_sha256_sum)?;
+    let sha256_regex = Regex::new(format!(r"([a-f0-9]+)\s+_{}_amd64.zip", os).as_str()).unwrap();
+    let expected_sha256 = capture_group(&sha256_regex, 1, &shasums)?;
+    check_sha256(&tmp_zip_file, &expected_sha256)?;
     let mut zip_archive = ZipArchive::new(tmp_zip_file)?;
     let mut binary_in_zip = zip_archive.by_name("terraform")?;
     let opt_file_path = dot_dir.opt.join(Binary::TERRAFORM).join(&version);
@@ -198,16 +192,10 @@ fn install_terragrunt_version(version: String, dot_dir: DotDir, os: &str) -> Str
     let opt_file_path = dot_dir.opt.join(Binary::TERRAGRUNT).join(&version);
     let opt_file = File::create(&opt_file_path)?;
     http_get_bytes(&http_client, &file_download_url, &opt_file)?;
-    let sha256_sums = http_get_text(&http_client, &shasums_download_url, "text/plain")?;
-    let sha256sum_regex = Regex::new(r"([a-f0-9]{64})\s+terragrunt_linux_amd64")?;
-    // TODO: fix
-    let expected_sha256_sum = sha256sum_regex
-        .captures(&sha256_sums)
-        .unwrap()
-        .get(1)
-        .unwrap()
-        .as_str();
-    check_sha256sum(&File::open(&opt_file_path)?, &expected_sha256_sum)?;
+    let shasums = http_get_text(&http_client, &shasums_download_url, "text/plain")?;
+    let sha256_regex = Regex::new(format!(r"([a-f0-9]+)\s+terragrunt_{}_amd64", os).as_str()).unwrap();
+    let expected_sha256 = capture_group(&sha256_regex, 1, &shasums)?;
+    check_sha256(&File::open(&opt_file_path)?, &expected_sha256)?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -369,17 +357,28 @@ fn http_get_text(http_client: &Client, url: &str, accept: &str) -> StringOrError
     Ok(text)
 }
 
-fn check_sha256sum(mut file: &File, expected_sha256_sum: &str) -> Result<(), Box<dyn Error>> {
+fn check_sha256(mut file: &File, expected: &str) -> Result<(), Box<dyn Error>> {
     file.seek(SeekFrom::Start(0))?;
     let mut sha256 = Sha256::new();
     copy(&mut file, &mut sha256)?;
     let result = sha256.finalize();
-    let actual_sha256_sum = hex::encode(result);
-    if &actual_sha256_sum != expected_sha256_sum {
+    let actual = hex::encode(result);
+    if &actual != expected {
         Err(format!(
-            "File checksum mismatch: expected '{}', got '{}'",
-            expected_sha256_sum, actual_sha256_sum
+            "File sha256 checksum mismatch: expected '{}', got '{}'",
+            expected, actual
         ))?;
     }
     Ok(())
+}
+
+fn capture_group(regex: &Regex, group: usize, text: &str) -> StringOrError {
+    let result = regex
+        .captures(text)
+        .ok_or("Regex capture group failed")?
+        .get(group)
+        .ok_or("Regex capture group not found")?
+        .as_str()
+        .to_string();
+    Ok(result)
 }
