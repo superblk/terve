@@ -1,4 +1,4 @@
-# Terve
+# Terve 👋
 
 Unified terraform and terragrunt version manager.
 
