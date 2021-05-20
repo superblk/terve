@@ -2,7 +2,7 @@
 
 Unified, minimal terraform and terragrunt version manager.
 
-WARNING: this is in _early_ development, so no releases yet. :sob:
+WARNING: this is in _early-ish_ development, so no releases yet. :sob:
 
 WARNING: terraform GPG signatures are not yet checked (only sha256 validation)
 
