@@ -166,7 +166,9 @@ fn install_terraform_version(version: String, dot_dir: DotDir, os: &str) -> Stri
     let tmp_zip_file = tempfile::tempfile()?;
     http_get_bytes(&http_client, &file_download_url, &tmp_zip_file)?;
     let shasums = http_get_text(&http_client, &shasums_download_url, "text/plain")?;
-    let sha256_regex = Regex::new(format!(r"([a-f0-9]+)\s+terraform_{}_{}_amd64.zip", &version, &os).as_str()).unwrap();
+    let sha256_regex =
+        Regex::new(format!(r"([a-f0-9]+)\s+terraform_{}_{}_amd64.zip", &version, &os).as_str())
+            .unwrap();
     let expected_sha256 = capture_group(&sha256_regex, 1, &shasums)?;
     check_sha256(&tmp_zip_file, &expected_sha256)?;
     let mut zip_archive = ZipArchive::new(tmp_zip_file)?;
@@ -193,7 +195,8 @@ fn install_terragrunt_version(version: String, dot_dir: DotDir, os: &str) -> Str
     let opt_file = File::create(&opt_file_path)?;
     http_get_bytes(&http_client, &file_download_url, &opt_file)?;
     let shasums = http_get_text(&http_client, &shasums_download_url, "text/plain")?;
-    let sha256_regex = Regex::new(format!(r"([a-f0-9]+)\s+terragrunt_{}_amd64", os).as_str()).unwrap();
+    let sha256_regex =
+        Regex::new(format!(r"([a-f0-9]+)\s+terragrunt_{}_amd64", os).as_str()).unwrap();
     let expected_sha256 = capture_group(&sha256_regex, 1, &shasums)?;
     check_sha256(&File::open(&opt_file_path)?, &expected_sha256)?;
     #[cfg(unix)]

@@ -1,13 +1,13 @@
 # Terve 👋
 
-Unified terraform and terragrunt version manager.
+Unified terraform and terragrunt version manager. 
 
 WARNING: this is in _early_ development, so no releases yet. :sob:
 
 ## Setup
 
 1. Build `terve` for your operating system
-1. Install it in `PATH`, e.g. in `/usr/local/bin`
+1. Install terve in `PATH`, e.g. in `/usr/local/bin`
 1. Add directory `~/.terve/bin` to `PATH` (using e.g. `.bashrc`)
 
 ## Usage
@@ -68,9 +68,10 @@ You need rustup and cargo. See <https://rustup.rs/>
 
 To build the binary, run `cargo build --release`. Binary is then found in `target/release/terve`
 
+To run integration tests, run `cargo test`.
+
 ## TODOs
 
-- QA: add tests!
-- CI: GitHub workflow release (-> linux/darwin)
+- Test macos (darwin) support
+- CI: GitHub workflow release (matrix: linux + darwin)
 - Security: implement GPG verify (terraform)
-- OS support: windows?
