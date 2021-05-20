@@ -1,8 +1,10 @@
 # Terve 👋
 
-Unified terraform and terragrunt version manager. 
+Unified, minimal terraform and terragrunt version manager.
 
 WARNING: this is in _early_ development, so no releases yet. :sob:
+
+WARNING: terraform GPG signatures are not yet checked (only sha256 validation)
 
 ## Setup
 
@@ -38,7 +40,7 @@ Syntax: `terve i[nstall] <binary> <semver>`
 - `terve i tf 0.12.31` installs terraform version 0.12.31
 - `terve i tf "$(cat .terraform-version)"` installs terraform version defined in `.terraform-version`
 - `terve i tg "$(cat .terragrunt-version)"` installs terragrunt version defined in `.terragrunt-version`
-- `terve l tg remote | grep 0.29. | xargs -n1 -P4 terve i tg` installs all terragrunt 0.29.x versions
+- `terve l tg r | grep 0.29. | xargs -n1 -P4 terve i tg` installs all available terragrunt 0.29.x versions
 
 ### Select
 
@@ -64,14 +66,13 @@ NOTE: remove does not fail if version is not installed
 
 ## Development
 
-You need rustup and cargo. See <https://rustup.rs/>
+You need rustup and cargo. See <https://rustup.rs/>. To run integration tests, run `cargo test`.
 
-To build the binary, run `cargo build --release`. Binary is then found in `target/release/terve`
-
-To run integration tests, run `cargo test`.
+To build the binary, run `cargo build --release`. Binary is then found in `target/release/terve`.
 
 ## TODOs
 
 - Test macos (darwin) support
 - CI: GitHub workflow release (matrix: linux + darwin)
 - Security: implement GPG verify (terraform)
+- OS: Windows support?

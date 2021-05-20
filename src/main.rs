@@ -385,3 +385,20 @@ fn capture_group(regex: &Regex, group: usize, text: &str) -> StringOrError {
         .to_string();
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_good_sha256() {
+        let file = File::open("tests/special.txt").expect("failed to open test file");
+        check_sha256(&file, "b93e557fb1f4b32346b3e035985c25017356d99cce0b98140fbbd225fe57f185").expect("expected sha256 match");
+    }
+
+    #[test]
+    fn test_bad_sha256() {
+        let file = File::open("tests/special.txt").expect("failed to open test file");
+        check_sha256(&file, "a93e557fb1f4b32346b3e035985c25017356d99cce0b98140fbbd225fe57f185").expect_err("expected sha256 mismatch");
+    }
+}
