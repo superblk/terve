@@ -1,6 +1,6 @@
 # Terve 👋
 
-Unified, minimal terraform and terragrunt version manager.
+Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terragrunt](https://github.com/gruntwork-io/terragrunt/releases) version manager.
 
 WARNING: this is in _early-ish_ development, so no releases yet. :sob:
 
