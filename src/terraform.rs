@@ -18,10 +18,10 @@ const TF_RELEASES_URL: &str = "https://releases.hashicorp.com/terraform/";
 pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
     let http_client = http::client()?;
     let releases_html = http::get_text(&http_client, TF_RELEASES_URL, "text/html")?;
-    let semver_regex = Regex::new(r"[0-9]+\.[0-9]+\.[0-9]+").unwrap();
+    let semver_regex = Regex::new(r"[0-9]+\.[0-9]+\.[0-9]+")?;
     let mut versions: Vec<&str> = semver_regex
         .find_iter(&releases_html)
-        .map(|mat| mat.as_str())
+        .map(|m| m.as_str())
         .collect();
     versions.dedup();
     let result = versions.join("\n");
