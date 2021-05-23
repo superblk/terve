@@ -70,7 +70,6 @@ To build the binary, run `cargo build --release`. Binary is then found in `targe
 
 ## TODOs
 
-- Test macos (darwin) support
-- CI: GitHub workflow release (matrix: linux + darwin)
 - Security: implement GPG verify (terraform)
+- CI: GitHub workflow release (matrix: linux + darwin)
 - OS: Windows support?
