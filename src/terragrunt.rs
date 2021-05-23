@@ -9,6 +9,7 @@ use crate::{
     utils,
 };
 use regex::Regex;
+use semver::Version;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -24,8 +25,8 @@ const TG_RELEASES_DOWNLOAD_URL: &str =
 pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
     let http_client = http::client()?;
     let mut releases: Vec<GitHubRelease> = Vec::new();
-    // Max out at 1000 most recent releases
-    for page_num in 1..=10 {
+    // Max out at 500 most recent releases
+    for page_num in 1..=5 {
         let mut page: Vec<GitHubRelease> = http_client
             .get(TG_RELEASES_API_URL)
             .header("Accept", "application/vnd.github.v3+json")
@@ -40,11 +41,12 @@ pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
             break;
         }
     }
-    let versions: Vec<&str> = releases
+    let mut versions: Vec<Version> = releases
         .iter()
         .map(|r| r.tag_name.trim_start_matches("v"))
+        .filter_map(|s| Version::parse(s).ok())
         .collect();
-    let result = versions.join("\n");
+    let result = utils::to_sorted_string(&mut versions);
     Ok(result)
 }
 

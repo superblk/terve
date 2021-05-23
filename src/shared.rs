@@ -8,6 +8,8 @@ use std::{
 
 use semver::Version;
 
+use crate::utils;
+
 pub enum Action {
     LIST,
     INSTALL,
@@ -94,13 +96,7 @@ pub fn list_installed_versions(binary: Binary, dot_dir: DotDir) -> Result<String
         .filter_map(|r| Some(r.ok()?.path().strip_prefix(&opt_dir).ok()?.to_path_buf()))
         .filter_map(|p| Version::parse(p.display().to_string().as_str()).ok())
         .collect();
-    installed_versions.sort();
-    installed_versions.reverse();
-    let result = installed_versions
-        .iter()
-        .map(|v| v.to_string())
-        .collect::<Vec<String>>()
-        .join("\n");
+    let result = utils::to_sorted_string(&mut installed_versions);
     Ok(result)
 }
 

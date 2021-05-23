@@ -21,7 +21,7 @@ Legend: `<binary>` is one of:
 
 ### List
 
-Lists installed or available versions.
+Lists installed or available versions, sorted latest first (desc).
 
 Syntax: `terve l[ist] <binary> [spec]` where `spec` is `r[emote]`
 
@@ -33,18 +33,21 @@ NOTE: list remote for terragrunt uses GitHub API which is rate-limited!
 
 ### Install
 
-Installs a specific version.
+Installs a specific binary version.
 
 Syntax: `terve i[nstall] <binary> <semver>`
 
 - `terve i tf 0.12.31` installs terraform version 0.12.31
+- `terve i tf "$(terve l tf r | head -n1)"` installs latest version of terraform
 - `terve i tf "$(cat .terraform-version)"` installs terraform version defined in `.terraform-version`
 - `terve i tg "$(cat .terragrunt-version)"` installs terragrunt version defined in `.terragrunt-version`
 - `terve l tg r | grep 0.29. | xargs -n1 -P4 terve i tg` installs all available terragrunt 0.29.x versions
 
+NOTE: install is idempotent, it can be run multiple times for a version without error
+
 ### Select
 
-Selects a specific version for use.
+Selects a specific binary version for use.
 
 Syntax: `terve s[elect] <binary> <semver>`
 
@@ -55,14 +58,14 @@ NOTE: selected version must be installed first
 
 ### Remove
 
-Removes a specific version.
+Removes a specific binary version.
 
 Syntax: `terve r[emove] <binary> <semver>`
 
 - `terve r tf 0.12.31` removes terraform version 0.12.31
 - `terve l tf | grep 0.11. | xargs -n1 terve r tf` removes all installed terraform 0.11.x versions
 
-NOTE: remove does not fail if version is not installed
+NOTE: remove is idempotent, it can be run multiple times for a version without error
 
 ## Development
 

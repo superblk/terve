@@ -5,6 +5,7 @@ use std::{
 };
 
 use regex::Regex;
+use semver::Version;
 use sha2::{Digest, Sha256};
 
 pub fn check_sha256_sum(mut file: &File, expected: &str) -> Result<(), Box<dyn Error>> {
@@ -35,6 +36,18 @@ pub fn get_capture_group(
         .as_str()
         .to_string();
     Ok(result)
+}
+
+pub fn to_sorted_string(versions: &mut Vec<Version>) -> String {
+    versions.sort();
+    versions.dedup();
+    versions.reverse();
+    let result = versions
+        .iter()
+        .map(|v| v.to_string())
+        .collect::<Vec<String>>()
+        .join("\n");
+    result
 }
 
 #[cfg(test)]

@@ -5,6 +5,7 @@ use std::{
 };
 
 use regex::Regex;
+use semver::Version;
 use zip::ZipArchive;
 
 use crate::{
@@ -19,12 +20,11 @@ pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
     let http_client = http::client()?;
     let releases_html = http::get_text(&http_client, TF_RELEASES_URL, "text/html")?;
     let semver_regex = Regex::new(r"[0-9]+\.[0-9]+\.[0-9]+")?;
-    let mut versions: Vec<&str> = semver_regex
+    let mut versions: Vec<Version> = semver_regex
         .find_iter(&releases_html)
-        .map(|m| m.as_str())
+        .filter_map(|m| Version::parse(m.as_str()).ok())
         .collect();
-    versions.dedup();
-    let result = versions.join("\n");
+    let result = utils::to_sorted_string(&mut versions);
     Ok(result)
 }
 
