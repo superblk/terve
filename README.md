@@ -4,7 +4,7 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
 
 WARNING: this is in _early-ish_ development, so no releases yet. :sob:
 
-WARNING: terraform GPG signatures are not yet checked (only sha256 validation)
+WARNING: terraform GPG signatures are not yet verified (only sha256 validation)
 
 ## Setup
 
@@ -14,14 +14,15 @@ WARNING: terraform GPG signatures are not yet checked (only sha256 validation)
 
 ## Usage
 
-Legend: `<binary>` is one of:
+Managed `<binary>` is `tf` (long form: `terraform`) or `tg` (long form: `terragrunt`).
 
-- `tf` (long form: `terraform`)
-- `tg` (long form: `terragrunt`)
+Install, select and remove are idempotent, and can be run multiple times for a version without error.
+
+List remote does not return pre-release versions (e.g. terraform `0.15.0-rc2`), but such versions can be installed/selected/removed (for testing).
 
 ### List
 
-Lists installed or available versions, sorted latest first (desc).
+Lists installed (local) or available (remote) versions, sorted latest first (descending).
 
 Syntax: `terve l[ist] <binary> [spec]` where `spec` is `r[emote]`
 
@@ -29,11 +30,11 @@ Syntax: `terve l[ist] <binary> [spec]` where `spec` is `r[emote]`
 - `terve l tf r` lists available (remote) terraform versions
 - `terve l tg r | grep 0.29.` lists available terragrunt 0.29.x versions
 
-NOTE: list remote for terragrunt uses GitHub API which is rate-limited!
+WARNING: list remote for terragrunt uses GitHub API which is rate-limited (GitHub API throws 403 Forbidden if rate-limit quota is depleted)!
 
 ### Install
 
-Installs a specific binary version.
+Installs a specific version.
 
 Syntax: `terve i[nstall] <binary> <semver>`
 
@@ -43,33 +44,27 @@ Syntax: `terve i[nstall] <binary> <semver>`
 - `terve i tg "$(cat .terragrunt-version)"` installs terragrunt version defined in `.terragrunt-version`
 - `terve l tg r | grep 0.29. | xargs -n1 -P4 terve i tg` installs all available terragrunt 0.29.x versions
 
-NOTE: install is idempotent, it can be run multiple times for a version without error
-
 ### Select
 
-Selects a specific binary version for use.
+Selects a specific version for use. Said version must be installed first.
 
 Syntax: `terve s[elect] <binary> <semver>`
 
 - `terve s tf 0.12.31` selects terraform version 0.12.31
 - `terve s tf "$(cat .terraform-version)"` selects terraform version defined in `.terraform-version`
 
-NOTE: selected version must be installed first
-
 ### Remove
 
-Removes a specific binary version.
+Removes a specific version.
 
 Syntax: `terve r[emove] <binary> <semver>`
 
 - `terve r tf 0.12.31` removes terraform version 0.12.31
 - `terve l tf | grep 0.11. | xargs -n1 terve r tf` removes all installed terraform 0.11.x versions
 
-NOTE: remove is idempotent, it can be run multiple times for a version without error
-
 ## Development
 
-You need rustup and cargo. See <https://rustup.rs/>. To run integration tests, run `cargo test`.
+You need rustup and cargo. See <https://rustup.rs/>. To run tests, run `cargo test`.
 
 To build the binary, run `cargo build --release`. Binary is then found in `target/release/terve`.
 

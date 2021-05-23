@@ -45,6 +45,7 @@ pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
         .iter()
         .map(|r| r.tag_name.trim_start_matches("v"))
         .filter_map(|s| Version::parse(s).ok())
+        .filter(|v| !v.is_prerelease())
         .collect();
     let result = utils::to_sorted_string(&mut versions);
     Ok(result)
@@ -55,23 +56,26 @@ pub fn install_binary_version(
     dot_dir: DotDir,
     os: String,
 ) -> Result<String, Box<dyn Error>> {
-    let file_download_url = format!(
-        "{}/v{}/terragrunt_{}_amd64",
-        TG_RELEASES_DOWNLOAD_URL, version, os
-    );
-    let shasums_download_url = format!("{0}/v{1}/SHA256SUMS", TG_RELEASES_DOWNLOAD_URL, version);
-    let http_client = http::client()?;
     let opt_file_path = dot_dir.opt.join(Binary::TERRAGRUNT).join(&version);
-    let opt_file = File::create(&opt_file_path)?;
-    http::get_bytes(&http_client, &file_download_url, &opt_file)?;
-    let shasums = http::get_text(&http_client, &shasums_download_url, "text/plain")?;
-    let sha256_regex = Regex::new(format!(r"([a-f0-9]+)\s+terragrunt_{}_amd64", os).as_str())?;
-    let expected_sha256 = utils::get_capture_group(&sha256_regex, 1, &shasums)?;
-    utils::check_sha256_sum(&File::open(&opt_file_path)?, &expected_sha256)?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        set_permissions(&opt_file_path, Permissions::from_mode(0o755))?;
+    if !opt_file_path.exists() {
+        let file_download_url = format!(
+            "{}/v{}/terragrunt_{}_amd64",
+            TG_RELEASES_DOWNLOAD_URL, version, os
+        );
+        let shasums_download_url =
+            format!("{0}/v{1}/SHA256SUMS", TG_RELEASES_DOWNLOAD_URL, version);
+        let http_client = http::client()?;
+        let opt_file = File::create(&opt_file_path)?;
+        http::get_bytes(&http_client, &file_download_url, &opt_file)?;
+        let shasums = http::get_text(&http_client, &shasums_download_url, "text/plain")?;
+        let sha256_regex = Regex::new(format!(r"([a-f0-9]+)\s+terragrunt_{}_amd64", os).as_str())?;
+        let expected_sha256 = utils::get_capture_group(&sha256_regex, 1, &shasums)?;
+        utils::check_sha256_sum(&File::open(&opt_file_path)?, &expected_sha256)?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            set_permissions(&opt_file_path, Permissions::from_mode(0o755))?;
+        }
     }
     Ok(format!("Installed terragrunt {}", version))
 }

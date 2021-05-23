@@ -14,7 +14,7 @@ mod utils;
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const USAGE_HELP: &str = "\
-Unified terraform and terragrunt version manager
+Unified terraform and terragrunt version manager (https://github.com/superblk/terve)
 
 USAGE:
   terve <ACTION> <BINARY> [<VERSION>]

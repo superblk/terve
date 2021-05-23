@@ -82,4 +82,13 @@ mod tests {
         assert_eq!(get_capture_group(&regex, 1, &str_match).unwrap(), "abc123");
         assert!(get_capture_group(&regex, 1, &str_no_match).is_err());
     }
+
+    #[test]
+    fn test_version_sort() {
+        let mut versions = vec!["0.13.4", "0.15.4", "0.1.0", "0.13.4"]
+            .into_iter()
+            .filter_map(|s| Version::parse(s).ok())
+            .collect();
+        assert_eq!("0.15.4\n0.13.4\n0.1.0", to_sorted_string(&mut versions));
+    }
 }
