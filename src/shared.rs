@@ -73,20 +73,21 @@ impl AsRef<Path> for Binary {
 
 pub struct DotDir {
     pub bin: PathBuf,
+    pub etc: PathBuf,
     pub opt: PathBuf,
 }
 
 impl DotDir {
-    pub fn init(home_dir: PathBuf) -> Result<DotDir, Box<dyn Error>> {
-        let bin_dir = home_dir.join(".terve/bin");
-        let opt_dir = home_dir.join(".terve/opt");
-        create_dir_all(&bin_dir)?;
-        create_dir_all(opt_dir.join("terraform"))?;
-        create_dir_all(opt_dir.join("terragrunt"))?;
-        Ok(DotDir {
-            bin: bin_dir,
-            opt: opt_dir,
-        })
+    pub fn bootstrap(home_dir: &PathBuf) -> Result<DotDir, Box<dyn Error>> {
+        let dot_dir = home_dir.join(".terve");
+        let bin = dot_dir.join("bin");
+        let etc = dot_dir.join("etc");
+        let opt = dot_dir.join("opt");
+        create_dir_all(&bin)?;
+        create_dir_all(&etc)?;
+        create_dir_all(opt.join("terraform"))?;
+        create_dir_all(opt.join("terragrunt"))?;
+        Ok(DotDir { bin, etc, opt })
     }
 }
 

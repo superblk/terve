@@ -15,6 +15,7 @@ serde       = { version = "~1.0", features = ["derive"] }
 semver      = "~0.11"
 sha2        = "~0.9"
 hex         = "~0.4"
+pgp         = "~0.7"
 
 [dev-dependencies]
 assert_cmd  = "~1.0"

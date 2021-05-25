@@ -13,8 +13,10 @@ mod utils;
 
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-const USAGE_HELP: &str = "\
-Unified terraform and terragrunt version manager (https://github.com/superblk/terve)
+const USAGE_HELP_MSG: &str = "\
+Unified terraform and terragrunt version manager
+
+See https://github.com/superblk/terve for documentation
 
 USAGE:
   terve <ACTION> <BINARY> [<VERSION>]
@@ -36,6 +38,7 @@ VERSION:
 FLAGS:
   -h, --help            Prints this help message
   -v, --version         Prints application version
+  -b, --bootstrap       Bootstraps ~/.terve directory tree
 ";
 
 const INVALID_ARGS_MSG: &str = "invalid arguments. Run 'terve --help' for usage";
@@ -59,7 +62,7 @@ fn run() -> Result<String, Box<dyn Error>> {
     let mut args = Arguments::from_env();
 
     if args.contains(["-h", "--help"]) {
-        return Ok(USAGE_HELP.to_string());
+        return Ok(USAGE_HELP_MSG.to_string());
     }
 
     if args.contains(["-v", "--version"]) {
@@ -67,8 +70,13 @@ fn run() -> Result<String, Box<dyn Error>> {
     }
 
     if let Some(home) = home_dir() {
+        let dot_dir = DotDir::bootstrap(&home)?;
+
+        if args.contains(["-b", "--bootstrap"]) {
+            return Ok(format!("Created {}/.terve", home.display()));
+        }
+
         let params = get_params(args)?;
-        let dot_dir = DotDir::init(home)?;
         match params {
             (Action::LIST, binary, None, _) => shared::list_installed_versions(binary, dot_dir),
             (Action::LIST, Binary::TERRAFORM, Some(v), _) if v == "r" || v == "remote" => {

@@ -1,12 +1,11 @@
+use regex::Regex;
+use semver::Version;
+use sha2::{Digest, Sha256};
 use std::{
     error::Error,
     fs::File,
     io::{copy, Seek, SeekFrom},
 };
-
-use regex::Regex;
-use semver::Version;
-use sha2::{Digest, Sha256};
 
 pub fn check_sha256_sum(mut file: &File, expected: &str) -> Result<(), Box<dyn Error>> {
     file.seek(SeekFrom::Start(0))?;
