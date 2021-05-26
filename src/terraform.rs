@@ -1,6 +1,10 @@
-use std::{error::Error, fs::{set_permissions, File, Permissions}, io::{Seek, SeekFrom, copy}};
+use std::{
+    error::Error,
+    fs::{set_permissions, File, Permissions},
+    io::copy,
+};
 
-use pgp::{Deserializable, SignedPublicKey, StandaloneSignature, types::KeyTrait};
+use pgp::{types::KeyTrait, Deserializable, SignedPublicKey, StandaloneSignature};
 use regex::Regex;
 use semver::Version;
 use zip::ZipArchive;
@@ -40,31 +44,23 @@ pub fn install_binary_version(
             format!("{0}{1}/terraform_{1}_SHA256SUMS", TF_RELEASES_URL, version);
         let http_client = http::client()?;
         let tmp_zip_file = tempfile::tempfile()?;
-        http::get_bytes(&http_client, &file_download_url, &tmp_zip_file)?;
+        http::download_file(&http_client, &file_download_url, &tmp_zip_file)?;
         let shasums = http::get_text(&http_client, &shasums_download_url, "text/plain")?;
         let pgp_public_key_path = dot_dir.etc.join("terraform.asc");
-        if pgp_public_key_path.is_file()
-            && pgp_public_key_path
-                .metadata()?
-                .permissions()
-                .readonly()
+        if pgp_public_key_path.is_file() && pgp_public_key_path.metadata()?.permissions().readonly()
         {
             let pgp_public_key_file = File::open(pgp_public_key_path)?;
             let (public_key, _) = SignedPublicKey::from_armor_single(pgp_public_key_file)?;
             let pgp_key_fingerprint = hex::encode(public_key.fingerprint()).to_uppercase();
-            let mut tmp_sig_file = tempfile::tempfile()?;
             let shasums_sig_download_url = format!(
                 "{0}{1}/terraform_{1}_SHA256SUMS.{2}.sig",
-                TF_RELEASES_URL, version, &pgp_key_fingerprint[32..]
+                TF_RELEASES_URL,
+                version,
+                &pgp_key_fingerprint[32..]
             );
-            http::get_bytes(&http_client, &shasums_sig_download_url, &tmp_sig_file)?;
-            tmp_sig_file.seek(SeekFrom::Start(0))?;
-            let signature = StandaloneSignature::from_bytes(tmp_sig_file)?;
-            verify_detached_pgp_signature(
-                &shasums,
-                &signature,
-                &public_key,
-            )?
+            let signature_bytes = http::get_bytes(&http_client, &shasums_sig_download_url)?;
+            let signature = StandaloneSignature::from_bytes(&signature_bytes[..])?;
+            verify_detached_pgp_signature(&shasums, &signature, &public_key)?
         } else {
             eprintln!("WARN: skipping PGP signature verification (no public key or bad file permissions in {})", pgp_public_key_path.display());
         }
@@ -75,7 +71,6 @@ pub fn install_binary_version(
         utils::check_sha256_sum(&tmp_zip_file, &expected_sha256)?;
         let mut zip_archive = ZipArchive::new(tmp_zip_file)?;
         let mut binary_in_zip = zip_archive.by_name("terraform")?;
-
         let mut opt_file = File::create(&opt_file_path)?;
         copy(&mut binary_in_zip, &mut opt_file)?;
         #[cfg(unix)]

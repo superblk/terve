@@ -1585,6 +1585,7 @@ name = "terve"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
+ "bytes",
  "hex",
  "home",
  "pgp",

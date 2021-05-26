@@ -2,7 +2,7 @@
 
 Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terragrunt](https://github.com/gruntwork-io/terragrunt/releases) version manager.
 
-WARNING: this is early-ish in development, and is thus subject to change.
+WARNING: this is early-ish in development, and is subject to change.
 
 ## Setup
 

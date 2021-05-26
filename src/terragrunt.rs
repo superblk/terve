@@ -66,7 +66,7 @@ pub fn install_binary_version(
             format!("{0}/v{1}/SHA256SUMS", TG_RELEASES_DOWNLOAD_URL, version);
         let http_client = http::client()?;
         let opt_file = File::create(&opt_file_path)?;
-        http::get_bytes(&http_client, &file_download_url, &opt_file)?;
+        http::download_file(&http_client, &file_download_url, &opt_file)?;
         let shasums = http::get_text(&http_client, &shasums_download_url, "text/plain")?;
         let sha256_regex = Regex::new(format!(r"([a-f0-9]+)\s+terragrunt_{}_amd64", os).as_str())?;
         let expected_sha256 = utils::get_capture_group(&sha256_regex, 1, &shasums)?;
