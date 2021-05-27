@@ -2,6 +2,8 @@
 
 Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terragrunt](https://github.com/gruntwork-io/terragrunt/releases) version manager.
 
+WARNING: this is a new project and is subject to change, hence no releases yet
+
 ## Supported platforms
 
 - Linux (amd64)
@@ -47,7 +49,7 @@ List remote does not return pre-release versions (e.g. terraform `0.15.0-rc2`), 
 
 ### List
 
-Lists installed (local) or available (remote) versions, sorted latest first (descending).
+Lists installed or available (remote) versions, sorted latest first (descending).
 
 Syntax: `terve l[ist] <binary> [spec]` where `spec` is `r[emote]`
 
@@ -90,7 +92,7 @@ Syntax: `terve r[emove] <binary> <semver>`
 ## Examples
 
 ```bash
-# CI automation
+# CI automation example
 
 tf_version="$(cat .terraform-version 2>/dev/null || echo 0.15.4)"
 tg_version="$(cat .terragrunt-version 2>/dev/null || echo 0.29.4)"
