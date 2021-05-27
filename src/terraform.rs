@@ -77,9 +77,9 @@ fn verify_download_integrity(
         );
         let signature_bytes = http_client.get_bytes(&shasums_sig_download_url)?;
         let signature = StandaloneSignature::from_bytes(&signature_bytes[..])?;
-        utils::verify_detached_pgp_signature(&shasums, &signature, &public_key)?
+        utils::verify_detached_pgp_signature(&shasums, &signature, &public_key)?;
     } else {
-        eprintln!("WARN: skipping PGP signature verification (no public key or bad file permissions in {})", pgp_public_key_path.display());
+        eprintln!("WARN: skipping PGP signature verification (please install {})", pgp_public_key_path.display());
     }
     let sha256_regex =
         Regex::new(format!(r"([a-f0-9]+)\s+terraform_{}_{}_amd64.zip", version, os).as_str())?;

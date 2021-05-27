@@ -8,16 +8,16 @@ use std::{
     io::{copy, Seek, SeekFrom},
 };
 
-pub fn check_sha256_sum(mut file: &File, expected: &str) -> Result<(), Box<dyn Error>> {
+pub fn check_sha256_sum(mut file: &File, expected_sha256: &str) -> Result<(), Box<dyn Error>> {
     file.seek(SeekFrom::Start(0))?;
     let mut sha256 = Sha256::new();
     copy(&mut file, &mut sha256)?;
     let result = sha256.finalize();
-    let actual = hex::encode(result);
-    if &actual != expected {
+    let actual_sha256 = hex::encode(result);
+    if &actual_sha256 != expected_sha256 {
         Err(format!(
             "File sha256 checksum mismatch: expected '{}', got '{}'",
-            expected, actual
+            expected_sha256, actual_sha256
         ))?;
     }
     Ok(())
