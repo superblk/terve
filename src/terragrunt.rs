@@ -17,11 +17,6 @@ struct GitHubRelease {
     tag_name: String,
 }
 
-const TG_RELEASES_API_URL: &str = "https://api.github.com/repos/gruntwork-io/terragrunt/releases";
-
-const TG_RELEASES_DOWNLOAD_URL: &str =
-    "https://github.com/gruntwork-io/terragrunt/releases/download/";
-
 pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
     let http_client = HttpClient::new()?;
     let mut releases: Vec<GitHubRelease> = Vec::new();
@@ -80,3 +75,8 @@ pub fn install_binary_version(
     }
     Ok(format!("Installed terragrunt {}", version))
 }
+
+const TG_RELEASES_API_URL: &str = "https://api.github.com/repos/gruntwork-io/terragrunt/releases";
+
+const TG_RELEASES_DOWNLOAD_URL: &str =
+    "https://github.com/gruntwork-io/terragrunt/releases/download/";
