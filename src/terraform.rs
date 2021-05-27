@@ -15,8 +15,6 @@ use crate::{
     utils,
 };
 
-const TF_RELEASES_URL: &str = "https://releases.hashicorp.com/terraform/";
-
 pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
     let http_client = HttpClient::new()?;
     let releases_html = http_client.get_text(TF_RELEASES_URL, "text/html")?;
@@ -89,3 +87,5 @@ fn verify_download_integrity(
     utils::check_sha256_sum(zip_file, &expected_sha256)?;
     Ok(())
 }
+
+const TF_RELEASES_URL: &str = "https://releases.hashicorp.com/terraform/";
