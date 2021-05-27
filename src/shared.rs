@@ -96,7 +96,7 @@ pub fn list_installed_versions(binary: Binary, dot_dir: DotDir) -> Result<String
     let mut installed_versions: Vec<Version> = read_dir(&opt_dir)?
         .filter_map(|r| Some(r.ok()?.path()))
         .filter_map(|p| Some(p.strip_prefix(&opt_dir).ok()?.to_owned()))
-        .filter_map(|p| Version::parse(&p.to_string_lossy()).ok())
+        .filter_map(|p| Version::parse(p.to_string_lossy().as_ref()).ok())
         .collect();
     let result = utils::to_sorted_multiline_string(&mut installed_versions);
     Ok(result)
@@ -122,7 +122,7 @@ pub fn select_binary_version(
     {
         std::os::unix::fs::symlink(&opt_file_path, &symlink_path)?;
     }
-    Ok(format!("Using {} {}", binary, version))
+    Ok(format!("Selected {} {}", binary, version))
 }
 
 pub fn remove_binary_version(
