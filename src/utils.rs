@@ -70,6 +70,10 @@ pub fn verify_detached_pgp_signature(
 #[cfg(test)]
 mod tests {
 
+    use std::fs::read_to_string;
+
+    use pgp::Deserializable;
+
     use super::*;
 
     #[test]
@@ -114,7 +118,30 @@ mod tests {
     }
 
     #[test]
-    fn test_verify_pgp_signature_match() {
-        //todo!()
+    fn test_pgp_verify_match() {
+        let content = read_to_string("tests/terraform_0.13.1_SHA256SUMS").unwrap();
+        let public_key =
+            SignedPublicKey::from_armor_single(File::open("tests/hashicorp-72D7468F.asc").unwrap())
+                .unwrap()
+                .0;
+        let signature = StandaloneSignature::from_bytes(
+            File::open("tests/terraform_0.13.1_SHA256SUMS.72D7468F.sig").unwrap(),
+        )
+        .unwrap();
+        assert!(verify_detached_pgp_signature(&content, &signature, &public_key).is_ok());
+    }
+
+    #[test]
+    fn test_pgp_verify_mismatch() {
+        let content = read_to_string("tests/terraform_0.13.1_SHA256SUMS").unwrap();
+        let public_key =
+            SignedPublicKey::from_armor_single(File::open("tests/hashicorp-72D7468F.asc").unwrap())
+                .unwrap()
+                .0;
+        let signature = StandaloneSignature::from_bytes(
+            File::open("tests/terraform_0.13.1_SHA256SUMS.348FFC4C.sig").unwrap(),
+        )
+        .unwrap();
+        assert!(verify_detached_pgp_signature(&content, &signature, &public_key).is_err());
     }
 }
