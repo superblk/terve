@@ -52,7 +52,7 @@ fn main() {
             0
         }
         Err(e) => {
-            eprintln!("Error: {}", e);
+            eprintln!("ERROR: {}", e);
             1
         }
     });
@@ -76,30 +76,27 @@ fn run() -> Result<String, Box<dyn Error>> {
             return Ok(format!("Created {}/.terve", home.display()));
         }
 
-        let params = get_params(args)?;
-        match params {
+        let (action, binary, version, os) = get_params(args)?;
+
+        match (action, binary, version, os) {
             (Action::LIST, binary, None, _) => shared::list_installed_versions(binary, dot_dir),
-            (Action::LIST, Binary::TERRAFORM, Some(v), _) if v == "r" || v == "remote" => {
+            (Action::LIST, Binary::TERRAFORM, Some(v), _) if v.is_remote() => {
                 terraform::list_available_versions()
             }
-            (Action::LIST, Binary::TERRAGRUNT, Some(v), _) if v == "r" || v == "remote" => {
+            (Action::LIST, Binary::TERRAGRUNT, Some(v), _) if v.is_remote() => {
                 terragrunt::list_available_versions()
             }
-            (Action::INSTALL, Binary::TERRAFORM, Some(version), os)
-                if Version::parse(&version).is_ok() =>
-            {
-                terraform::install_binary_version(version, dot_dir, os)
+            (Action::INSTALL, Binary::TERRAFORM, Some(v), os) if v.is_semver() => {
+                terraform::install_binary_version(v, dot_dir, os)
             }
-            (Action::INSTALL, Binary::TERRAGRUNT, Some(version), os)
-                if Version::parse(&version).is_ok() =>
-            {
-                terragrunt::install_binary_version(version, dot_dir, os)
+            (Action::INSTALL, Binary::TERRAGRUNT, Some(v), os) if v.is_semver() => {
+                terragrunt::install_binary_version(v, dot_dir, os)
             }
-            (Action::SELECT, binary, Some(version), _) if Version::parse(&version).is_ok() => {
-                shared::select_binary_version(binary, version, dot_dir)
+            (Action::SELECT, binary, Some(v), _) if v.is_semver() => {
+                shared::select_binary_version(binary, v, dot_dir)
             }
-            (Action::REMOVE, binary, Some(version), _) if Version::parse(&version).is_ok() => {
-                shared::remove_binary_version(binary, version, dot_dir)
+            (Action::REMOVE, binary, Some(v), _) if v.is_semver() => {
+                shared::remove_binary_version(binary, v, dot_dir)
             }
             _ => Err(INVALID_ARGS_MSG)?,
         }
@@ -130,4 +127,19 @@ fn get_params(
     };
 
     Ok((action, binary, version, os))
+}
+
+trait VersionQualifier {
+    fn is_remote(&self) -> bool;
+    fn is_semver(&self) -> bool;
+}
+
+impl VersionQualifier for String {
+    fn is_remote(&self) -> bool {
+        self == "r" || self == "remote"
+    }
+
+    fn is_semver(&self) -> bool {
+        Version::parse(self).is_ok()
+    }
 }
