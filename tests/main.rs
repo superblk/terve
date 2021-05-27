@@ -28,14 +28,17 @@ fn test_terraform_all(home: &PathBuf) {
         .code(0)
         .stdout(predicate::str::contains("0.14.11\n"));
 
-    terve()
-        .arg("i")
-        .arg("tf")
-        .arg("0.14.11")
-        .assert()
-        .success()
-        .code(0)
-        .stdout(predicate::eq("Installed terraform 0.14.11\n"));
+    // Assert idempotency by running the command twice
+    for _ in 1..=2 {
+        terve()
+            .arg("i")
+            .arg("tf")
+            .arg("0.14.11")
+            .assert()
+            .success()
+            .code(0)
+            .stdout(predicate::eq("Installed terraform 0.14.11\n"));
+    }
 
     terve()
         .arg("s")
@@ -44,16 +47,19 @@ fn test_terraform_all(home: &PathBuf) {
         .assert()
         .failure()
         .code(1)
-        .stderr(predicate::eq("Error: terraform version 0.14.10 is not installed. Run 'terve install terraform 0.14.10'\n"));
+        .stderr(predicate::eq("ERROR: terraform version 0.14.10 is not installed. Run 'terve install terraform 0.14.10'\n"));
 
-    terve()
-        .arg("s")
-        .arg("tf")
-        .arg("0.14.11")
-        .assert()
-        .success()
-        .code(0)
-        .stdout(predicate::eq("Using terraform 0.14.11\n"));
+    // Assert idempotency by running the command twice
+    for _ in 1..=2 {
+        terve()
+            .arg("s")
+            .arg("tf")
+            .arg("0.14.11")
+            .assert()
+            .success()
+            .code(0)
+            .stdout(predicate::eq("Selected terraform 0.14.11\n"));
+    }
 
     let symlink_path = home.join(".terve/bin/terraform");
     let opt_file_path = home.join(".terve/opt/terraform/0.14.11");
@@ -64,14 +70,17 @@ fn test_terraform_all(home: &PathBuf) {
             && read_link(symlink_path).expect("Failed to read symlink") == opt_file_path
     );
 
-    terve()
-        .arg("r")
-        .arg("tf")
-        .arg("0.14.11")
-        .assert()
-        .success()
-        .code(0)
-        .stdout(predicate::eq("Removed terraform 0.14.11\n"));
+    // Assert idempotency by running the command twice
+    for _ in 1..=2 {
+        terve()
+            .arg("r")
+            .arg("tf")
+            .arg("0.14.11")
+            .assert()
+            .success()
+            .code(0)
+            .stdout(predicate::eq("Removed terraform 0.14.11\n"));
+    }
 
     terve()
         .arg("l")
@@ -100,14 +109,17 @@ fn test_terragrunt_all(home: &PathBuf) {
         .code(0)
         .stdout(predicate::str::contains("0.29.2\n"));
 
-    terve()
-        .arg("i")
-        .arg("tg")
-        .arg("0.29.2")
-        .assert()
-        .success()
-        .code(0)
-        .stdout(predicate::eq("Installed terragrunt 0.29.2\n"));
+    // Assert idempotency by running the command twice
+    for _ in 1..=2 {
+        terve()
+            .arg("i")
+            .arg("tg")
+            .arg("0.29.2")
+            .assert()
+            .success()
+            .code(0)
+            .stdout(predicate::eq("Installed terragrunt 0.29.2\n"));
+    }
 
     terve()
         .arg("s")
@@ -116,16 +128,19 @@ fn test_terragrunt_all(home: &PathBuf) {
         .assert()
         .failure()
         .code(1)
-        .stderr(predicate::eq("Error: terragrunt version 0.28.2 is not installed. Run 'terve install terragrunt 0.28.2'\n"));
+        .stderr(predicate::eq("ERROR: terragrunt version 0.28.2 is not installed. Run 'terve install terragrunt 0.28.2'\n"));
 
-    terve()
-        .arg("s")
-        .arg("tg")
-        .arg("0.29.2")
-        .assert()
-        .success()
-        .code(0)
-        .stdout(predicate::eq("Using terragrunt 0.29.2\n"));
+    // Assert idempotency by running the command twice
+    for _ in 1..=2 {
+        terve()
+            .arg("s")
+            .arg("tg")
+            .arg("0.29.2")
+            .assert()
+            .success()
+            .code(0)
+            .stdout(predicate::eq("Selected terragrunt 0.29.2\n"));
+    }
 
     let symlink_path = home.join(".terve/bin/terragrunt");
     let opt_file_path = home.join(".terve/opt/terragrunt/0.29.2");
@@ -136,14 +151,17 @@ fn test_terragrunt_all(home: &PathBuf) {
             && read_link(symlink_path).expect("Failed to read symlink") == opt_file_path
     );
 
-    terve()
-        .arg("r")
-        .arg("tg")
-        .arg("0.29.2")
-        .assert()
-        .success()
-        .code(0)
-        .stdout(predicate::eq("Removed terragrunt 0.29.2\n"));
+    // Assert idempotency by running the command twice
+    for _ in 1..=2 {
+        terve()
+            .arg("r")
+            .arg("tg")
+            .arg("0.29.2")
+            .assert()
+            .success()
+            .code(0)
+            .stdout(predicate::eq("Removed terragrunt 0.29.2\n"));
+    }
 
     terve()
         .arg("l")
