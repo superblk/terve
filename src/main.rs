@@ -11,7 +11,7 @@ mod terraform;
 mod terragrunt;
 mod utils;
 
-const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+const TERVE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const USAGE_HELP_MSG: &str = "\
 Unified terraform and terragrunt version manager
@@ -66,7 +66,7 @@ fn run() -> Result<String, Box<dyn Error>> {
     }
 
     if args.contains(["-v", "--version"]) {
-        return Ok(APP_VERSION.to_string());
+        return Ok(TERVE_VERSION.to_string());
     }
 
     if let Some(home) = home_dir() {

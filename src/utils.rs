@@ -1,3 +1,4 @@
+use pgp::{types::KeyTrait, SignedPublicKey, StandaloneSignature};
 use regex::Regex;
 use semver::Version;
 use sha2::{Digest, Sha256};
@@ -37,7 +38,7 @@ pub fn get_capture_group(
     Ok(result)
 }
 
-pub fn to_sorted_string(versions: &mut Vec<Version>) -> String {
+pub fn to_sorted_multiline_string(versions: &mut Vec<Version>) -> String {
     versions.sort();
     versions.dedup();
     versions.reverse();
@@ -49,8 +50,26 @@ pub fn to_sorted_string(versions: &mut Vec<Version>) -> String {
     result
 }
 
+pub fn verify_detached_pgp_signature(
+    content: &str,
+    signature: &StandaloneSignature,
+    public_key: &SignedPublicKey,
+) -> Result<(), Box<dyn Error>> {
+    if public_key.is_signing_key() && signature.verify(&public_key, &content.as_bytes()).is_ok() {
+        return Ok(());
+    } else {
+        for sub_key in &public_key.public_subkeys {
+            if sub_key.is_signing_key() && signature.verify(sub_key, &content.as_bytes()).is_ok() {
+                return Ok(());
+            }
+        }
+    }
+    Err("PGP signature verification failed")?
+}
+
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]
@@ -88,6 +107,14 @@ mod tests {
             .into_iter()
             .filter_map(|s| Version::parse(s).ok())
             .collect();
-        assert_eq!("0.15.4\n0.13.4\n0.1.0", to_sorted_string(&mut versions));
+        assert_eq!(
+            "0.15.4\n0.13.4\n0.1.0",
+            to_sorted_multiline_string(&mut versions)
+        );
+    }
+
+    #[test]
+    fn test_verify_pgp_signature_match() {
+        //todo!()
     }
 }

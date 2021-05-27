@@ -94,10 +94,11 @@ impl DotDir {
 pub fn list_installed_versions(binary: Binary, dot_dir: DotDir) -> Result<String, Box<dyn Error>> {
     let opt_dir = dot_dir.opt.join(binary);
     let mut installed_versions: Vec<Version> = read_dir(&opt_dir)?
-        .filter_map(|r| Some(r.ok()?.path().strip_prefix(&opt_dir).ok()?.to_path_buf()))
-        .filter_map(|p| Version::parse(p.display().to_string().as_str()).ok())
+        .filter_map(|r| Some(r.ok()?.path()))
+        .filter_map(|p| Some(p.strip_prefix(&opt_dir).ok()?.to_owned()))
+        .filter_map(|p| Version::parse(&p.to_string_lossy()).ok())
         .collect();
-    let result = utils::to_sorted_string(&mut installed_versions);
+    let result = utils::to_sorted_multiline_string(&mut installed_versions);
     Ok(result)
 }
 
