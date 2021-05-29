@@ -79,11 +79,11 @@ fn verify_download_integrity(
         let signature = StandaloneSignature::from_bytes(&signature_bytes[..])?;
         utils::verify_detached_pgp_signature(&shasums, &signature, &public_key)?;
     } else {
-        eprintln!("WARN: skipping PGP signature verification (please install {})", pgp_public_key_path.display());
+        eprintln!("WARN: Skipping PGP signature verification (please install {})", pgp_public_key_path.display());
     }
     let sha256_regex =
         Regex::new(format!(r"([a-f0-9]+)\s+terraform_{}_{}_amd64.zip", version, os).as_str())?;
-    let expected_sha256 = utils::get_capture_group(&sha256_regex, 1, &shasums)?;
+    let expected_sha256 = utils::regex_capture_group(&sha256_regex, 1, &shasums)?;
     utils::check_sha256_sum(zip_file, &expected_sha256)?;
     Ok(())
 }

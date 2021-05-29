@@ -32,7 +32,7 @@ impl FromStr for Action {
             "s" | "select" => Ok(Action::SELECT),
             "r" | "remove" => Ok(Action::REMOVE),
             _ => Err(format!(
-                "action must be one of: l[ist], i[nstall], s[elect] or r[emove]"
+                "Action must be one of: l[ist], i[nstall], s[elect] or r[emove]"
             )),
         }
     }
@@ -46,7 +46,7 @@ impl FromStr for Binary {
             "tf" | "terraform" => Ok(Binary::TERRAFORM),
             "tg" | "terragrunt" => Ok(Binary::TERRAGRUNT),
             _ => Err(format!(
-                "binary must be one of: tf, tg, terraform or terragrunt"
+                "Binary must be one of: tf, tg, terraform or terragrunt"
             )),
         }
     }

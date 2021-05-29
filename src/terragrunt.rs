@@ -1,7 +1,4 @@
-use std::{
-    error::Error,
-    fs::{set_permissions, File, Permissions},
-};
+use std::{error::Error, fs::{File, Permissions, set_permissions}, io::copy};
 
 use crate::{
     http::HttpClient,
@@ -61,12 +58,14 @@ pub fn install_binary_version(
         let shasums_download_url =
             format!("{0}/v{1}/SHA256SUMS", TG_RELEASES_DOWNLOAD_URL, version);
         let http_client = HttpClient::new()?;
-        let opt_file = File::create(&opt_file_path)?;
-        http_client.download_file(&file_download_url, &opt_file)?;
+        let mut tmp_file = tempfile::tempfile()?;
+        http_client.download_file(&file_download_url, &tmp_file)?;
         let shasums = http_client.get_text(&shasums_download_url, "text/plain")?;
         let sha256_regex = Regex::new(format!(r"([a-f0-9]+)\s+terragrunt_{}_amd64", os).as_str())?;
-        let expected_sha256 = utils::get_capture_group(&sha256_regex, 1, &shasums)?;
-        utils::check_sha256_sum(&File::open(&opt_file_path)?, &expected_sha256)?;
+        let expected_sha256 = utils::regex_capture_group(&sha256_regex, 1, &shasums)?;
+        utils::check_sha256_sum(&tmp_file, &expected_sha256)?;
+        let mut opt_file = File::create(&opt_file_path)?;
+        copy(&mut tmp_file, &mut opt_file)?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
@@ -79,4 +78,4 @@ pub fn install_binary_version(
 const TG_RELEASES_API_URL: &str = "https://api.github.com/repos/gruntwork-io/terragrunt/releases";
 
 const TG_RELEASES_DOWNLOAD_URL: &str =
-    "https://github.com/gruntwork-io/terragrunt/releases/download/";
+    "https://github.com/gruntwork-io/terragrunt/releases/download";

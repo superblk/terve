@@ -20,10 +20,11 @@ pub fn check_sha256_sum(mut file: &File, expected_sha256: &str) -> Result<(), Bo
             expected_sha256, actual_sha256
         ))?;
     }
+    file.seek(SeekFrom::Start(0))?;
     Ok(())
 }
 
-pub fn get_capture_group(
+pub fn regex_capture_group(
     regex: &Regex,
     group: usize,
     text: &str,
@@ -101,8 +102,8 @@ mod tests {
         let str_match = "abc123 hai";
         let str_no_match = "nope";
         let regex = Regex::new(r"([a-z0-9]+) hai").unwrap();
-        assert_eq!(get_capture_group(&regex, 1, &str_match).unwrap(), "abc123");
-        assert!(get_capture_group(&regex, 1, &str_no_match).is_err());
+        assert_eq!(regex_capture_group(&regex, 1, &str_match).unwrap(), "abc123");
+        assert!(regex_capture_group(&regex, 1, &str_no_match).is_err());
     }
 
     #[test]

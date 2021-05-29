@@ -41,7 +41,7 @@ FLAGS:
   -b, --bootstrap       Bootstraps ~/.terve directory tree
 ";
 
-const INVALID_ARGS_MSG: &str = "invalid arguments. Run 'terve --help' for usage";
+const INVALID_ARGS_MSG: &str = "Invalid arguments. Run 'terve --help' for usage help";
 
 fn main() {
     process::exit(match run() {
@@ -101,7 +101,7 @@ fn run() -> Result<String, Box<dyn Error>> {
             _ => Err(INVALID_ARGS_MSG)?,
         }
     } else {
-        Err("unable to resolve user home directory (HOME unset?)")?
+        Err("Unable to resolve user home directory (HOME unset?)")?
     }
 }
 
