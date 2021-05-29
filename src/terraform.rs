@@ -68,21 +68,16 @@ fn verify_download_integrity(
     if pgp_public_key_path.is_file() && pgp_public_key_path.metadata()?.permissions().readonly() {
         let pgp_public_key_file = File::open(pgp_public_key_path)?;
         let (public_key, _) = SignedPublicKey::from_armor_single(pgp_public_key_file)?;
-        let pgp_key_fingerprint = hex::encode(public_key.fingerprint()).to_uppercase();
+        let pgp_key_id = &hex::encode(public_key.fingerprint()).to_uppercase()[32..];
         let shasums_sig_download_url = format!(
             "{0}{1}/terraform_{1}_SHA256SUMS.{2}.sig",
-            TF_RELEASES_URL,
-            version,
-            &pgp_key_fingerprint[32..]
+            TF_RELEASES_URL, version, &pgp_key_id
         );
         let signature_bytes = http_client.get_bytes(&shasums_sig_download_url)?;
         let signature = StandaloneSignature::from_bytes(&signature_bytes[..])?;
         utils::verify_detached_pgp_signature(&shasums, &signature, &public_key)?;
     } else {
-        eprintln!(
-            "WARN: Skipping PGP signature verification (please install {})",
-            pgp_public_key_path.display()
-        );
+        eprintln!("WARNING: Skipping PGP signature verification. See https://github.com/superblk/terve#setup");
     }
     let sha256_regex =
         Regex::new(format!(r"([a-f0-9]+)\s+terraform_{}_{}_amd64.zip", version, os).as_str())?;
