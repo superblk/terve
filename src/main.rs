@@ -101,7 +101,7 @@ fn run() -> Result<String, Box<dyn Error>> {
             _ => Err(INVALID_ARGS_MSG.into()),
         }
     } else {
-        Err("Unable to resolve user home directory (HOME unset?)".into())
+        Err("Unable to resolve user home directory".into())
     }
 }
 
