@@ -15,8 +15,8 @@ WARNING: this is a new project and is subject to change, hence no releases yet
 1. Add directory `~/.terve/bin` to `PATH` (using e.g. `.bashrc`)
 1. Create the `~/.terve` directory tree by running `terve --bootstrap`
 1. Install Hashicorp's [PGP public key](https://www.hashicorp.com/security) in `~/.terve/etc/terraform.asc` (mode `0444`)
-    - This key is used to validate terraform download PGP signatures
-    - If not present, terve will log a warning for each terraform install
+    - This key is used to verify terraform download PGP signatures
+    - If not installed, terve will log a warning for each terraform install
 
 ## Layout
 
