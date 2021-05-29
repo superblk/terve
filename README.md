@@ -89,20 +89,6 @@ Syntax: `terve r[emove] <binary> <semver>`
 - `terve r tf 0.12.31` removes terraform version 0.12.31
 - `terve l tf | grep 0.11. | xargs -n1 terve r tf` removes all installed terraform 0.11.x versions
 
-## Examples
-
-```bash
-# CI automation example
-
-tf_version="$(cat .terraform-version 2>/dev/null || echo 0.15.4)"
-tg_version="$(cat .terragrunt-version 2>/dev/null || echo 0.29.4)"
-
-terve i tf "$tf_version" && terve s tf "$tf_version"
-terve i tg "$tg_version" && terve s tg "$tg_version"
-
-terragrunt plan
-```
-
 ## Development
 
 You need rustup and cargo. See <https://rustup.rs/>. To run all tests, run `cargo test`.
