@@ -11,38 +11,6 @@ mod terraform;
 mod terragrunt;
 mod utils;
 
-const TERVE_VERSION: &str = env!("CARGO_PKG_VERSION");
-
-const USAGE_HELP_MSG: &str = "\
-Unified terraform and terragrunt version manager
-
-See https://github.com/superblk/terve for documentation
-
-USAGE:
-  terve <ACTION> <BINARY> [<VERSION>]
-
-ACTION:
-  l, list               Lists versions
-  i, install            Installs a version
-  s, select             Selects an installed version
-  r, remove             Removes an installed version
-
-BINARY:
-  tf, terraform         Terraform (https://www.terraform.io/)
-  tg, terragrunt        Terragrunt (https://terragrunt.gruntwork.io/)
-
-VERSION:
-  r, remote             Available versions (list only)
-  x.y.z                 Semantic version string, e.g. 0.15.4
-
-FLAGS:
-  -h, --help            Prints this help message
-  -v, --version         Prints application version
-  -b, --bootstrap       Bootstraps ~/.terve directory tree
-";
-
-const INVALID_ARGS_MSG: &str = "Invalid arguments. Run 'terve --help' for usage help";
-
 fn main() {
     process::exit(match run() {
         Ok(s) => {
@@ -143,3 +111,42 @@ impl VersionQualifier for String {
         Version::parse(self).is_ok()
     }
 }
+
+const TERVE_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+const USAGE_HELP_MSG: &str = "\
+Unified terraform and terragrunt version manager
+
+See https://github.com/superblk/terve for documentation
+
+USAGE:
+  terve <ACTION> <BINARY> [<VERSION>]
+
+ACTION:
+  l, list               Lists versions
+  i, install            Installs a specific version
+  s, select             Selects an installed version
+  r, remove             Removes an installed version
+
+BINARY:
+  tf, terraform         Terraform (https://www.terraform.io/)
+  tg, terragrunt        Terragrunt (https://terragrunt.gruntwork.io/)
+
+VERSION:
+  r, remote             Available (remote) versions
+  x.y.z                 Semantic version string, e.g. 0.15.4
+
+FLAGS:
+  -h, --help            Prints this help message
+  -v, --version         Prints application version
+  -b, --bootstrap       Creates ~/.terve directory tree
+
+EXAMPLES:
+  terve l tf            Lists installed terraform versions
+  terve l tf r          Lists available terraform versions
+  terve i tf 0.15.4     Installs terraform 0.15.4
+  terve s tf 0.15.4     Selects terraform 0.15.4
+  terve r tf 0.15.4     Removes terraform 0.15.4
+";
+
+const INVALID_ARGS_MSG: &str = "Invalid arguments. Run 'terve --help' for usage";
