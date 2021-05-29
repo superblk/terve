@@ -1,4 +1,8 @@
-use std::{error::Error, fs::{File, Permissions, set_permissions}, io::copy};
+use std::{
+    error::Error,
+    fs::{set_permissions, File, Permissions},
+    io::copy,
+};
 
 use crate::{
     http::HttpClient,
@@ -36,7 +40,7 @@ pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
     }
     let mut versions: Vec<Version> = releases
         .iter()
-        .map(|r| r.tag_name.trim_start_matches("v"))
+        .map(|r| r.tag_name.trim_start_matches('v'))
         .filter_map(|s| Version::parse(s).ok())
         .filter(|v| v.pre == Prerelease::EMPTY)
         .collect();
@@ -49,7 +53,7 @@ pub fn install_binary_version(
     dot_dir: DotDir,
     os: String,
 ) -> Result<String, Box<dyn Error>> {
-    let opt_file_path = dot_dir.opt.join(Binary::TERRAGRUNT).join(&version);
+    let opt_file_path = dot_dir.opt.join(Binary::Terragrunt).join(&version);
     if !opt_file_path.exists() {
         let file_download_url = format!(
             "{}/v{}/terragrunt_{}_amd64",

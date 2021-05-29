@@ -14,11 +14,12 @@ pub fn check_sha256_sum(mut file: &File, expected_sha256: &str) -> Result<(), Bo
     copy(&mut file, &mut sha256)?;
     let result = sha256.finalize();
     let actual_sha256 = hex::encode(result);
-    if &actual_sha256 != expected_sha256 {
-        Err(format!(
+    if actual_sha256 != expected_sha256 {
+        return Err(format!(
             "File sha256 checksum mismatch: expected '{}', got '{}'",
             expected_sha256, actual_sha256
-        ))?;
+        )
+        .into());
     }
     file.seek(SeekFrom::Start(0))?;
     Ok(())
@@ -65,7 +66,7 @@ pub fn verify_detached_pgp_signature(
             }
         }
     }
-    Err("PGP signature verification failed")?
+    Err("PGP signature verification failed".into())
 }
 
 #[cfg(test)]
@@ -102,7 +103,10 @@ mod tests {
         let str_match = "abc123 hai";
         let str_no_match = "nope";
         let regex = Regex::new(r"([a-z0-9]+) hai").unwrap();
-        assert_eq!(regex_capture_group(&regex, 1, &str_match).unwrap(), "abc123");
+        assert_eq!(
+            regex_capture_group(&regex, 1, &str_match).unwrap(),
+            "abc123"
+        );
         assert!(regex_capture_group(&regex, 1, &str_no_match).is_err());
     }
 

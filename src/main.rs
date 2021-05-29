@@ -79,43 +79,43 @@ fn run() -> Result<String, Box<dyn Error>> {
         let (action, binary, version, os) = get_params(args)?;
 
         match (action, binary, version, os) {
-            (Action::LIST, binary, None, _) => shared::list_installed_versions(binary, dot_dir),
-            (Action::LIST, Binary::TERRAFORM, Some(v), _) if v.is_remote() => {
+            (Action::List, binary, None, _) => shared::list_installed_versions(binary, dot_dir),
+            (Action::List, Binary::Terraform, Some(v), _) if v.is_remote() => {
                 terraform::list_available_versions()
             }
-            (Action::LIST, Binary::TERRAGRUNT, Some(v), _) if v.is_remote() => {
+            (Action::List, Binary::Terragrunt, Some(v), _) if v.is_remote() => {
                 terragrunt::list_available_versions()
             }
-            (Action::INSTALL, Binary::TERRAFORM, Some(v), os) if v.is_semver() => {
+            (Action::Install, Binary::Terraform, Some(v), os) if v.is_semver() => {
                 terraform::install_binary_version(v, dot_dir, os)
             }
-            (Action::INSTALL, Binary::TERRAGRUNT, Some(v), os) if v.is_semver() => {
+            (Action::Install, Binary::Terragrunt, Some(v), os) if v.is_semver() => {
                 terragrunt::install_binary_version(v, dot_dir, os)
             }
-            (Action::SELECT, binary, Some(v), _) if v.is_semver() => {
+            (Action::Select, binary, Some(v), _) if v.is_semver() => {
                 shared::select_binary_version(binary, v, dot_dir)
             }
-            (Action::REMOVE, binary, Some(v), _) if v.is_semver() => {
+            (Action::Remove, binary, Some(v), _) if v.is_semver() => {
                 shared::remove_binary_version(binary, v, dot_dir)
             }
-            _ => Err(INVALID_ARGS_MSG)?,
+            _ => Err(INVALID_ARGS_MSG.into()),
         }
     } else {
-        Err("Unable to resolve user home directory (HOME unset?)")?
+        Err("Unable to resolve user home directory (HOME unset?)".into())
     }
 }
 
-fn get_params(
-    mut args: Arguments,
-) -> Result<(Action, Binary, Option<String>, String), Box<dyn Error>> {
+type Params = (Action, Binary, Option<String>, String);
+
+fn get_params(mut args: Arguments) -> Result<Params, Box<dyn Error>> {
     let action: Action = match args.subcommand()? {
         Some(s) => Action::from_str(&s)?,
-        None => Err(INVALID_ARGS_MSG)?,
+        None => return Err(INVALID_ARGS_MSG.into()),
     };
 
     let binary: Binary = match args.subcommand()? {
         Some(s) => Binary::from_str(&s)?,
-        None => Err(INVALID_ARGS_MSG)?,
+        None => return Err(INVALID_ARGS_MSG.into()),
     };
 
     let version: Option<String> = args.subcommand()?;
