@@ -1,29 +1,31 @@
+use pgp::{types::KeyTrait, SignedPublicKey, StandaloneSignature};
+use regex::Regex;
+use semver::Version;
+use sha2::{Digest, Sha256};
 use std::{
     error::Error,
     fs::File,
     io::{copy, Seek, SeekFrom},
 };
 
-use regex::Regex;
-use semver::Version;
-use sha2::{Digest, Sha256};
-
-pub fn check_sha256_sum(mut file: &File, expected: &str) -> Result<(), Box<dyn Error>> {
+pub fn check_sha256_sum(mut file: &File, expected_sha256: &str) -> Result<(), Box<dyn Error>> {
     file.seek(SeekFrom::Start(0))?;
     let mut sha256 = Sha256::new();
     copy(&mut file, &mut sha256)?;
     let result = sha256.finalize();
-    let actual = hex::encode(result);
-    if &actual != expected {
-        Err(format!(
+    let actual_sha256 = hex::encode(result);
+    if actual_sha256 != expected_sha256 {
+        return Err(format!(
             "File sha256 checksum mismatch: expected '{}', got '{}'",
-            expected, actual
-        ))?;
+            expected_sha256, actual_sha256
+        )
+        .into());
     }
+    file.seek(SeekFrom::Start(0))?;
     Ok(())
 }
 
-pub fn get_capture_group(
+pub fn regex_capture_group(
     regex: &Regex,
     group: usize,
     text: &str,
@@ -38,7 +40,7 @@ pub fn get_capture_group(
     Ok(result)
 }
 
-pub fn to_sorted_string(versions: &mut Vec<Version>) -> String {
+pub fn to_sorted_multiline_string(versions: &mut Vec<Version>) -> String {
     versions.sort();
     versions.dedup();
     versions.reverse();
@@ -50,8 +52,30 @@ pub fn to_sorted_string(versions: &mut Vec<Version>) -> String {
     result
 }
 
+pub fn verify_detached_pgp_signature(
+    content: &str,
+    signature: &StandaloneSignature,
+    public_key: &SignedPublicKey,
+) -> Result<(), Box<dyn Error>> {
+    if public_key.is_signing_key() && signature.verify(&public_key, &content.as_bytes()).is_ok() {
+        return Ok(());
+    } else {
+        for sub_key in &public_key.public_subkeys {
+            if sub_key.is_signing_key() && signature.verify(sub_key, &content.as_bytes()).is_ok() {
+                return Ok(());
+            }
+        }
+    }
+    Err("PGP signature verification failed".into())
+}
+
 #[cfg(test)]
 mod tests {
+
+    use std::fs::read_to_string;
+
+    use pgp::Deserializable;
+
     use super::*;
 
     #[test]
@@ -79,8 +103,11 @@ mod tests {
         let str_match = "abc123 hai";
         let str_no_match = "nope";
         let regex = Regex::new(r"([a-z0-9]+) hai").unwrap();
-        assert_eq!(get_capture_group(&regex, 1, &str_match).unwrap(), "abc123");
-        assert!(get_capture_group(&regex, 1, &str_no_match).is_err());
+        assert_eq!(
+            regex_capture_group(&regex, 1, &str_match).unwrap(),
+            "abc123"
+        );
+        assert!(regex_capture_group(&regex, 1, &str_no_match).is_err());
     }
 
     #[test]
@@ -89,6 +116,37 @@ mod tests {
             .into_iter()
             .filter_map(|s| Version::parse(s).ok())
             .collect();
-        assert_eq!("0.15.4\n0.13.4\n0.1.0", to_sorted_string(&mut versions));
+        assert_eq!(
+            "0.15.4\n0.13.4\n0.1.0",
+            to_sorted_multiline_string(&mut versions)
+        );
+    }
+
+    #[test]
+    fn test_pgp_verify_match() {
+        let content = read_to_string("tests/terraform_0.13.1_SHA256SUMS").unwrap();
+        let public_key =
+            SignedPublicKey::from_armor_single(File::open("tests/hashicorp-72D7468F.asc").unwrap())
+                .unwrap()
+                .0;
+        let signature = StandaloneSignature::from_bytes(
+            File::open("tests/terraform_0.13.1_SHA256SUMS.72D7468F.sig").unwrap(),
+        )
+        .unwrap();
+        assert!(verify_detached_pgp_signature(&content, &signature, &public_key).is_ok());
+    }
+
+    #[test]
+    fn test_pgp_verify_mismatch() {
+        let content = read_to_string("tests/terraform_0.13.1_SHA256SUMS").unwrap();
+        let public_key =
+            SignedPublicKey::from_armor_single(File::open("tests/hashicorp-72D7468F.asc").unwrap())
+                .unwrap()
+                .0;
+        let signature = StandaloneSignature::from_bytes(
+            File::open("tests/terraform_0.13.1_SHA256SUMS.348FFC4C.sig").unwrap(),
+        )
+        .unwrap();
+        assert!(verify_detached_pgp_signature(&content, &signature, &public_key).is_err());
     }
 }

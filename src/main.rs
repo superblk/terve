@@ -1,4 +1,4 @@
-use home::home_dir;
+use dirs::home_dir;
 use pico_args::Arguments;
 use semver::Version;
 use shared::{Action, Binary, DotDir};
@@ -11,10 +11,12 @@ mod terraform;
 mod terragrunt;
 mod utils;
 
-const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+const TERVE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-const USAGE_HELP: &str = "\
-Unified terraform and terragrunt version manager (https://github.com/superblk/terve)
+const USAGE_HELP_MSG: &str = "\
+Unified terraform and terragrunt version manager
+
+See https://github.com/superblk/terve for documentation
 
 USAGE:
   terve <ACTION> <BINARY> [<VERSION>]
@@ -36,9 +38,10 @@ VERSION:
 FLAGS:
   -h, --help            Prints this help message
   -v, --version         Prints application version
+  -b, --bootstrap       Bootstraps ~/.terve directory tree
 ";
 
-const INVALID_ARGS_MSG: &str = "invalid arguments. Run 'terve --help' for usage";
+const INVALID_ARGS_MSG: &str = "Invalid arguments. Run 'terve --help' for usage help";
 
 fn main() {
     process::exit(match run() {
@@ -49,7 +52,7 @@ fn main() {
             0
         }
         Err(e) => {
-            eprintln!("Error: {}", e);
+            eprintln!("ERROR: {}", e);
             1
         }
     });
@@ -59,58 +62,60 @@ fn run() -> Result<String, Box<dyn Error>> {
     let mut args = Arguments::from_env();
 
     if args.contains(["-h", "--help"]) {
-        return Ok(USAGE_HELP.to_string());
+        return Ok(USAGE_HELP_MSG.to_string());
     }
 
     if args.contains(["-v", "--version"]) {
-        return Ok(APP_VERSION.to_string());
+        return Ok(TERVE_VERSION.to_string());
     }
 
     if let Some(home) = home_dir() {
-        let params = get_params(args)?;
-        let dot_dir = DotDir::init(home)?;
-        match params {
-            (Action::LIST, binary, None, _) => shared::list_installed_versions(binary, dot_dir),
-            (Action::LIST, Binary::TERRAFORM, Some(v), _) if v == "r" || v == "remote" => {
+        let dot_dir = DotDir::bootstrap(&home)?;
+
+        if args.contains(["-b", "--bootstrap"]) {
+            return Ok(format!("Created {}/.terve", home.display()));
+        }
+
+        let (action, binary, version, os) = get_params(args)?;
+
+        match (action, binary, version, os) {
+            (Action::List, binary, None, _) => shared::list_installed_versions(binary, dot_dir),
+            (Action::List, Binary::Terraform, Some(v), _) if v.is_remote() => {
                 terraform::list_available_versions()
             }
-            (Action::LIST, Binary::TERRAGRUNT, Some(v), _) if v == "r" || v == "remote" => {
+            (Action::List, Binary::Terragrunt, Some(v), _) if v.is_remote() => {
                 terragrunt::list_available_versions()
             }
-            (Action::INSTALL, Binary::TERRAFORM, Some(version), os)
-                if Version::parse(&version).is_ok() =>
-            {
-                terraform::install_binary_version(version, dot_dir, os)
+            (Action::Install, Binary::Terraform, Some(v), os) if v.is_semver() => {
+                terraform::install_binary_version(v, dot_dir, os)
             }
-            (Action::INSTALL, Binary::TERRAGRUNT, Some(version), os)
-                if Version::parse(&version).is_ok() =>
-            {
-                terragrunt::install_binary_version(version, dot_dir, os)
+            (Action::Install, Binary::Terragrunt, Some(v), os) if v.is_semver() => {
+                terragrunt::install_binary_version(v, dot_dir, os)
             }
-            (Action::SELECT, binary, Some(version), _) if Version::parse(&version).is_ok() => {
-                shared::select_binary_version(binary, version, dot_dir)
+            (Action::Select, binary, Some(v), _) if v.is_semver() => {
+                shared::select_binary_version(binary, v, dot_dir)
             }
-            (Action::REMOVE, binary, Some(version), _) if Version::parse(&version).is_ok() => {
-                shared::remove_binary_version(binary, version, dot_dir)
+            (Action::Remove, binary, Some(v), _) if v.is_semver() => {
+                shared::remove_binary_version(binary, v, dot_dir)
             }
-            _ => Err(INVALID_ARGS_MSG)?,
+            _ => Err(INVALID_ARGS_MSG.into()),
         }
     } else {
-        Err("unable to resolve user home directory (HOME unset?)")?
+        Err("Unable to resolve user home directory".into())
     }
 }
 
-fn get_params(
-    mut args: Arguments,
-) -> Result<(Action, Binary, Option<String>, String), Box<dyn Error>> {
+type Params = (Action, Binary, Option<String>, String);
+
+fn get_params(mut args: Arguments) -> Result<Params, Box<dyn Error>> {
     let action: Action = match args.subcommand()? {
         Some(s) => Action::from_str(&s)?,
-        None => Err(INVALID_ARGS_MSG)?,
+        None => return Err(INVALID_ARGS_MSG.into()),
     };
 
     let binary: Binary = match args.subcommand()? {
         Some(s) => Binary::from_str(&s)?,
-        None => Err(INVALID_ARGS_MSG)?,
+        None => return Err(INVALID_ARGS_MSG.into()),
     };
 
     let version: Option<String> = args.subcommand()?;
@@ -122,4 +127,19 @@ fn get_params(
     };
 
     Ok((action, binary, version, os))
+}
+
+trait VersionQualifier {
+    fn is_remote(&self) -> bool;
+    fn is_semver(&self) -> bool;
+}
+
+impl VersionQualifier for String {
+    fn is_remote(&self) -> bool {
+        self == "r" || self == "remote"
+    }
+
+    fn is_semver(&self) -> bool {
+        Version::parse(self).is_ok()
+    }
 }

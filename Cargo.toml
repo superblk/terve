@@ -10,11 +10,13 @@ pico-args   = "~0.4"
 reqwest     = { version = "~0.11", default-features = false, features = ["rustls-tls", "json", "blocking"] }
 zip         = "~0.5"
 tempfile    = "~3.2"
-home        = "~0.5"
+dirs        = "~3.0"
 serde       = { version = "~1.0", features = ["derive"] }
-semver      = "~0.11"
+semver      = "~1.0"
 sha2        = "~0.9"
 hex         = "~0.4"
+pgp         = "~0.7"
+bytes       = "~1.0"
 
 [dev-dependencies]
 assert_cmd  = "~1.0"

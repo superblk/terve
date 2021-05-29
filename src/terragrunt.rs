@@ -1,15 +1,16 @@
 use std::{
     error::Error,
     fs::{set_permissions, File, Permissions},
+    io::copy,
 };
 
 use crate::{
-    http,
+    http::HttpClient,
     shared::{Binary, DotDir},
     utils,
 };
 use regex::Regex;
-use semver::Version;
+use semver::{Prerelease, Version};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -17,17 +18,13 @@ struct GitHubRelease {
     tag_name: String,
 }
 
-const TG_RELEASES_API_URL: &str = "https://api.github.com/repos/gruntwork-io/terragrunt/releases";
-
-const TG_RELEASES_DOWNLOAD_URL: &str =
-    "https://github.com/gruntwork-io/terragrunt/releases/download/";
-
 pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
-    let http_client = http::client()?;
+    let http_client = HttpClient::new()?;
     let mut releases: Vec<GitHubRelease> = Vec::new();
     // Max out at 500 most recent releases
     for page_num in 1..=5 {
         let mut page: Vec<GitHubRelease> = http_client
+            .custom()
             .get(TG_RELEASES_API_URL)
             .header("Accept", "application/vnd.github.v3+json")
             .query(&[("per_page", "100")])
@@ -43,11 +40,11 @@ pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
     }
     let mut versions: Vec<Version> = releases
         .iter()
-        .map(|r| r.tag_name.trim_start_matches("v"))
+        .map(|r| r.tag_name.trim_start_matches('v'))
         .filter_map(|s| Version::parse(s).ok())
-        .filter(|v| !v.is_prerelease())
+        .filter(|v| v.pre == Prerelease::EMPTY)
         .collect();
-    let result = utils::to_sorted_string(&mut versions);
+    let result = utils::to_sorted_multiline_string(&mut versions);
     Ok(result)
 }
 
@@ -56,7 +53,7 @@ pub fn install_binary_version(
     dot_dir: DotDir,
     os: String,
 ) -> Result<String, Box<dyn Error>> {
-    let opt_file_path = dot_dir.opt.join(Binary::TERRAGRUNT).join(&version);
+    let opt_file_path = dot_dir.opt.join(Binary::Terragrunt).join(&version);
     if !opt_file_path.exists() {
         let file_download_url = format!(
             "{}/v{}/terragrunt_{}_amd64",
@@ -64,13 +61,15 @@ pub fn install_binary_version(
         );
         let shasums_download_url =
             format!("{0}/v{1}/SHA256SUMS", TG_RELEASES_DOWNLOAD_URL, version);
-        let http_client = http::client()?;
-        let opt_file = File::create(&opt_file_path)?;
-        http::get_bytes(&http_client, &file_download_url, &opt_file)?;
-        let shasums = http::get_text(&http_client, &shasums_download_url, "text/plain")?;
+        let http_client = HttpClient::new()?;
+        let mut tmp_file = tempfile::tempfile()?;
+        http_client.download_file(&file_download_url, &tmp_file)?;
+        let shasums = http_client.get_text(&shasums_download_url, "text/plain")?;
         let sha256_regex = Regex::new(format!(r"([a-f0-9]+)\s+terragrunt_{}_amd64", os).as_str())?;
-        let expected_sha256 = utils::get_capture_group(&sha256_regex, 1, &shasums)?;
-        utils::check_sha256_sum(&File::open(&opt_file_path)?, &expected_sha256)?;
+        let expected_sha256 = utils::regex_capture_group(&sha256_regex, 1, &shasums)?;
+        utils::check_sha256_sum(&tmp_file, &expected_sha256)?;
+        let mut opt_file = File::create(&opt_file_path)?;
+        copy(&mut tmp_file, &mut opt_file)?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
@@ -79,3 +78,8 @@ pub fn install_binary_version(
     }
     Ok(format!("Installed terragrunt {}", version))
 }
+
+const TG_RELEASES_API_URL: &str = "https://api.github.com/repos/gruntwork-io/terragrunt/releases";
+
+const TG_RELEASES_DOWNLOAD_URL: &str =
+    "https://github.com/gruntwork-io/terragrunt/releases/download";

@@ -2,15 +2,42 @@
 
 Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terragrunt](https://github.com/gruntwork-io/terragrunt/releases) version manager.
 
-WARNING: this is in _early-ish_ development, so no releases yet. :sob:
+WARNING: this is a new project and is subject to change, hence no releases yet
 
-WARNING: terraform GPG signatures are not yet verified (only sha256 validation)
+## Supported platforms
+
+- Linux (amd64)
+- MacOS (amd64)
 
 ## Setup
 
-1. Build `terve` for your operating system
-1. Install terve in `PATH`, e.g. in `/usr/local/bin`
+1. Install `terve` in `PATH`, e.g. in `/usr/local/bin`
 1. Add directory `~/.terve/bin` to `PATH` (using e.g. `.bashrc`)
+1. Create the `~/.terve` directory tree by running `terve --bootstrap`
+1. Install Hashicorp's [PGP public key](https://www.hashicorp.com/security) in `~/.terve/etc/terraform.asc` (mode `0444`)
+    - This key is used to validate terraform download PGP signatures
+    - If not present, terve will log a warning for each terraform install
+
+## Layout
+
+Terve keeps files in directory `$HOME/.terve` like so:
+
+```txt
+/home/whoami/.terve
+├── bin
+│   ├── terraform -> /home/whoami/.terve/opt/terraform/0.15.4
+│   └── terragrunt -> /home/whoami/.terve/opt/terragrunt/0.28.10
+├── etc
+│   └── terraform.asc
+└── opt
+    ├── terraform
+    │   ├── 0.14.11
+    │   └── 0.15.4
+    └── terragrunt
+        ├── 0.28.10
+        ├── 0.28.39
+        └── 0.29.4
+```
 
 ## Usage
 
@@ -22,7 +49,7 @@ List remote does not return pre-release versions (e.g. terraform `0.15.0-rc2`), 
 
 ### List
 
-Lists installed (local) or available (remote) versions, sorted latest first (descending).
+Lists installed or available (remote) versions, sorted latest first (descending).
 
 Syntax: `terve l[ist] <binary> [spec]` where `spec` is `r[emote]`
 
@@ -46,7 +73,7 @@ Syntax: `terve i[nstall] <binary> <semver>`
 
 ### Select
 
-Selects a specific version for use. Said version must be installed first.
+Selects a specific version for use. That version must be installed first.
 
 Syntax: `terve s[elect] <binary> <semver>`
 
@@ -64,12 +91,11 @@ Syntax: `terve r[emove] <binary> <semver>`
 
 ## Development
 
-You need rustup and cargo. See <https://rustup.rs/>. To run tests, run `cargo test`.
+You need rustup and cargo. See <https://rustup.rs/>. To run all tests, run `cargo test`.
 
 To build the binary, run `cargo build --release`. Binary is then found in `target/release/terve`.
 
 ## TODOs
 
-- Security: implement GPG verify (terraform)
-- CI: GitHub workflow release (matrix: linux + darwin)
+- CI: Release workflow (matrix: linux + darwin)
 - OS: Windows support?

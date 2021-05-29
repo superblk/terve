@@ -11,15 +11,15 @@ use semver::Version;
 use crate::utils;
 
 pub enum Action {
-    LIST,
-    INSTALL,
-    SELECT,
-    REMOVE,
+    List,
+    Install,
+    Select,
+    Remove,
 }
 
 pub enum Binary {
-    TERRAFORM,
-    TERRAGRUNT,
+    Terraform,
+    Terragrunt,
 }
 
 impl FromStr for Action {
@@ -27,13 +27,11 @@ impl FromStr for Action {
 
     fn from_str(a: &str) -> Result<Self, Self::Err> {
         match a {
-            "l" | "list" => Ok(Action::LIST),
-            "i" | "install" => Ok(Action::INSTALL),
-            "s" | "select" => Ok(Action::SELECT),
-            "r" | "remove" => Ok(Action::REMOVE),
-            _ => Err(format!(
-                "action must be one of: l[ist], i[nstall], s[elect] or r[emove]"
-            )),
+            "l" | "list" => Ok(Action::List),
+            "i" | "install" => Ok(Action::Install),
+            "s" | "select" => Ok(Action::Select),
+            "r" | "remove" => Ok(Action::Remove),
+            _ => Err("Action must be one of: l[ist], i[nstall], s[elect] or r[emove]".to_string()),
         }
     }
 }
@@ -43,11 +41,9 @@ impl FromStr for Binary {
 
     fn from_str(a: &str) -> Result<Self, Self::Err> {
         match a {
-            "tf" | "terraform" => Ok(Binary::TERRAFORM),
-            "tg" | "terragrunt" => Ok(Binary::TERRAGRUNT),
-            _ => Err(format!(
-                "binary must be one of: tf, tg, terraform or terragrunt"
-            )),
+            "tf" | "terraform" => Ok(Binary::Terraform),
+            "tg" | "terragrunt" => Ok(Binary::Terragrunt),
+            _ => Err("Binary must be one of: tf, tg, terraform or terragrunt".to_string()),
         }
     }
 }
@@ -55,8 +51,8 @@ impl FromStr for Binary {
 impl Display for Binary {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            Binary::TERRAFORM => write!(f, "terraform"),
-            Binary::TERRAGRUNT => write!(f, "terragrunt"),
+            Binary::Terraform => write!(f, "terraform"),
+            Binary::Terragrunt => write!(f, "terragrunt"),
         }
     }
 }
@@ -64,8 +60,8 @@ impl Display for Binary {
 impl AsRef<Path> for Binary {
     fn as_ref(&self) -> &Path {
         let path = match *self {
-            Binary::TERRAFORM => "terraform",
-            Binary::TERRAGRUNT => "terragrunt",
+            Binary::Terraform => "terraform",
+            Binary::Terragrunt => "terragrunt",
         };
         Path::new(path)
     }
@@ -73,30 +69,32 @@ impl AsRef<Path> for Binary {
 
 pub struct DotDir {
     pub bin: PathBuf,
+    pub etc: PathBuf,
     pub opt: PathBuf,
 }
 
 impl DotDir {
-    pub fn init(home_dir: PathBuf) -> Result<DotDir, Box<dyn Error>> {
-        let bin_dir = home_dir.join(".terve/bin");
-        let opt_dir = home_dir.join(".terve/opt");
-        create_dir_all(&bin_dir)?;
-        create_dir_all(opt_dir.join("terraform"))?;
-        create_dir_all(opt_dir.join("terragrunt"))?;
-        Ok(DotDir {
-            bin: bin_dir,
-            opt: opt_dir,
-        })
+    pub fn bootstrap(home_dir: &Path) -> Result<DotDir, Box<dyn Error>> {
+        let dot_dir = home_dir.join(".terve");
+        let bin = dot_dir.join("bin");
+        let etc = dot_dir.join("etc");
+        let opt = dot_dir.join("opt");
+        create_dir_all(&bin)?;
+        create_dir_all(&etc)?;
+        create_dir_all(opt.join("terraform"))?;
+        create_dir_all(opt.join("terragrunt"))?;
+        Ok(DotDir { bin, etc, opt })
     }
 }
 
 pub fn list_installed_versions(binary: Binary, dot_dir: DotDir) -> Result<String, Box<dyn Error>> {
     let opt_dir = dot_dir.opt.join(binary);
     let mut installed_versions: Vec<Version> = read_dir(&opt_dir)?
-        .filter_map(|r| Some(r.ok()?.path().strip_prefix(&opt_dir).ok()?.to_path_buf()))
-        .filter_map(|p| Version::parse(p.display().to_string().as_str()).ok())
+        .filter_map(|r| Some(r.ok()?.path()))
+        .filter_map(|p| Some(p.strip_prefix(&opt_dir).ok()?.to_owned()))
+        .filter_map(|p| Version::parse(p.to_string_lossy().as_ref()).ok())
         .collect();
-    let result = utils::to_sorted_string(&mut installed_versions);
+    let result = utils::to_sorted_multiline_string(&mut installed_versions);
     Ok(result)
 }
 
@@ -108,10 +106,11 @@ pub fn select_binary_version(
     let symlink_path = dot_dir.bin.join(&binary);
     let opt_file_path = dot_dir.opt.join(&binary).join(&version);
     if !Path::new(&opt_file_path).exists() {
-        Err(format!(
+        return Err(format!(
             "{0} version {1} is not installed. Run 'terve install {0} {1}'",
             binary, version
-        ))?
+        )
+        .into());
     }
     if read_link(&symlink_path).is_ok() {
         remove_file(&symlink_path)?;
@@ -120,7 +119,7 @@ pub fn select_binary_version(
     {
         std::os::unix::fs::symlink(&opt_file_path, &symlink_path)?;
     }
-    Ok(format!("Using {} {}", binary, version))
+    Ok(format!("Selected {} {}", binary, version))
 }
 
 pub fn remove_binary_version(
