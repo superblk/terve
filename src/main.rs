@@ -1,4 +1,4 @@
-use home::home_dir;
+use dirs::home_dir;
 use pico_args::Arguments;
 use semver::Version;
 use shared::{Action, Binary, DotDir};
