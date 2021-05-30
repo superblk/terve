@@ -2,7 +2,7 @@
 
 Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terragrunt](https://github.com/gruntwork-io/terragrunt/releases) version manager.
 
-WARNING: this is a new project and is subject to change, hence no releases yet
+WARNING: this is a new project, and is subject to change
 
 ## Supported platforms
 
@@ -11,11 +11,11 @@ WARNING: this is a new project and is subject to change, hence no releases yet
 
 ## Setup
 
-1. Install `terve` in `PATH`, e.g. in `/usr/local/bin`
-1. Add directory `~/.terve/bin` to `PATH` (using e.g. `.bashrc`)
+1. Build, and install `terve` in `PATH`, e.g. in `/usr/local/bin`
+1. Add the directory `~/.terve/bin` to `PATH` (using e.g. `.bashrc`)
 1. Create the `~/.terve` directory tree by running `terve --bootstrap`
 1. Install Hashicorp's [PGP public key](https://www.hashicorp.com/security) in `~/.terve/etc/terraform.asc` (mode `0444`)
-    - This key is used to verify terraform download PGP signatures
+    - This public key is used to verify terraform download PGP signatures
     - If not installed, terve will log a warning for each terraform install
 
 ## Layout
