@@ -2,7 +2,7 @@
 
 Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terragrunt](https://github.com/gruntwork-io/terragrunt/releases) version manager.
 
-WARNING: this is a new project, and is subject to change
+WARNING: this is a new project, and is very subject to change
 
 ## Supported platforms
 
@@ -97,6 +97,7 @@ To build the binary, run `cargo build --release`. Binary is then found in `targe
 
 ## TODOs
 
+- QA: More and better tests
 - CI: Release workflow (matrix: linux + darwin)
 - Err: more contextual error messages (anyhow?)
-- OS: Windows support?
+- OS: Windows support (.exe symlink 🤔)
