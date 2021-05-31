@@ -57,8 +57,6 @@ Syntax: `terve l[ist] <binary> [spec]` where `spec` is `r[emote]`
 - `terve l tf r` lists available (remote) terraform versions
 - `terve l tg r | grep 0.29.` lists available terragrunt 0.29.x versions
 
-WARNING: list remote for terragrunt uses GitHub API which is rate-limited (GitHub API throws 403 Forbidden if rate-limit quota is depleted)!
-
 ### Install
 
 Installs a specific version.
@@ -91,13 +89,15 @@ Syntax: `terve r[emove] <binary> <semver>`
 
 ## Development
 
-You need rustup and cargo. See <https://rustup.rs/>. To run all tests, run `cargo test`.
+You need [cargo](https://rustup.rs/) and [OpenSSL pre-requisites](https://docs.rs/openssl#automatic). To run all tests, run `cargo test`.
 
 To build the binary, run `cargo build --release`. Binary is then found in `target/release/terve`.
+
+Visual Studio Code with [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=matklad.rust-analyzer) provides a good IDE experience.
 
 ## TODOs
 
 - QA: Improve test coverage
 - CI: Release workflow (matrix: linux + darwin)
 - Err: more contextual error messages (anyhow?)
-- OS: Windows support (.exe symlink 🤔)
+- OS: Windows support (.exe symlink 🤔)?

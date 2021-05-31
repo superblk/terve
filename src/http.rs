@@ -49,10 +49,6 @@ impl HttpClient {
             .text()?;
         Ok(text)
     }
-
-    pub fn custom(&self) -> &Client {
-        &self.client
-    }
 }
 
 const HTTP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);

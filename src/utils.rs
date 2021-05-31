@@ -1,3 +1,4 @@
+use git2::{Direction, Remote};
 use pgp::{types::KeyTrait, SignedPublicKey, StandaloneSignature};
 use regex::Regex;
 use semver::Version;
@@ -67,6 +68,20 @@ pub fn verify_detached_pgp_signature(
         }
     }
     Err("PGP signature verification failed".into())
+}
+
+pub fn git_list_remote_tags(repo_url: &str) -> Result<Vec<String>, Box<dyn Error>> {
+    let mut remote = Remote::create_detached(repo_url)?;
+    remote.connect(Direction::Fetch)?;
+    let result = remote
+        .list()?
+        .iter()
+        .map(|h| h.name().to_string())
+        .filter(|r| r.starts_with("refs/tags/"))
+        .map(|s| s.trim_start_matches("refs/tags/").to_owned())
+        .collect();
+    remote.disconnect()?;
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -148,5 +163,11 @@ mod tests {
         )
         .unwrap();
         assert!(verify_detached_pgp_signature(&content, &signature, &public_key).is_err());
+    }
+
+    #[test]
+    fn test_git_list_remote_tags() {
+        let tags = git_list_remote_tags("https://github.com/gruntwork-io/terragrunt").unwrap();
+        assert!(tags.contains(&"v0.29.7".to_string()));
     }
 }
