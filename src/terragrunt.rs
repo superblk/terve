@@ -12,36 +12,11 @@ use crate::{
 use regex::Regex;
 use reqwest::StatusCode;
 use semver::{Prerelease, Version};
-use serde::Deserialize;
-
-#[derive(Deserialize)]
-struct GitHubRelease {
-    tag_name: String,
-}
 
 pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
-    let http_client = HttpClient::new()?;
-    let mut releases: Vec<GitHubRelease> = Vec::new();
-    // Max out at 500 most recent releases
-    for page_num in 1..=5 {
-        let mut page: Vec<GitHubRelease> = http_client
-            .custom()
-            .get(TG_RELEASES_API_URL)
-            .header("Accept", "application/vnd.github.v3+json")
-            .query(&[("per_page", "100")])
-            .query(&[("page", page_num.to_string().as_str())])
-            .send()?
-            .error_for_status()?
-            .json()?;
-        let num_results = page.len();
-        releases.append(&mut page);
-        if num_results < 100 {
-            break;
-        }
-    }
-    let mut versions: Vec<Version> = releases
+    let mut versions: Vec<Version> = utils::git_list_remote_tags(TG_GIT_REPOSITORY_URL)?
         .iter()
-        .map(|r| r.tag_name.trim_start_matches('v'))
+        .map(|t| t.trim_start_matches('v'))
         .filter_map(|s| Version::parse(s).ok())
         .filter(|v| v.pre == Prerelease::EMPTY)
         .collect();
@@ -90,7 +65,7 @@ pub fn install_binary_version(
     Ok(format!("Installed terragrunt {}", version))
 }
 
-const TG_RELEASES_API_URL: &str = "https://api.github.com/repos/gruntwork-io/terragrunt/releases";
+const TG_GIT_REPOSITORY_URL: &str = "https://github.com/gruntwork-io/terragrunt";
 
 const TG_RELEASES_DOWNLOAD_URL: &str =
     "https://github.com/gruntwork-io/terragrunt/releases/download";
