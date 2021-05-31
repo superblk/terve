@@ -10,6 +10,7 @@ use crate::{
     utils,
 };
 use regex::Regex;
+use reqwest::StatusCode;
 use semver::{Prerelease, Version};
 use serde::Deserialize;
 
@@ -64,10 +65,20 @@ pub fn install_binary_version(
         let http_client = HttpClient::new()?;
         let mut tmp_file = tempfile::tempfile()?;
         http_client.download_file(&file_download_url, &tmp_file)?;
-        let shasums = http_client.get_text(&shasums_download_url, "text/plain")?;
-        let sha256_regex = Regex::new(format!(r"([a-f0-9]+)\s+terragrunt_{}_amd64", os).as_str())?;
-        let expected_sha256 = utils::regex_capture_group(&sha256_regex, 1, &shasums)?;
-        utils::check_sha256_sum(&tmp_file, &expected_sha256)?;
+        match http_client.get_text(&shasums_download_url, "text/plain") {
+            Ok(shasums) => {
+                let sha256_regex =
+                    Regex::new(format!(r"([a-f0-9]+)\s+terragrunt_{}_amd64", os).as_str())?;
+                let expected_sha256 = utils::regex_capture_group(&sha256_regex, 1, &shasums)?;
+                utils::check_sha256_sum(&tmp_file, &expected_sha256)?;
+            }
+            Err(e) if e.status() == Some(StatusCode::NOT_FOUND) => {
+                eprintln!("WARNING: Skipping SHA256 file integrity check, because SHA256SUMS file was not found (this is expected for terragrunt releases < 0.18.1)");
+            }
+            Err(other) => {
+                return Err(other.into());
+            }
+        }
         let mut opt_file = File::create(&opt_file_path)?;
         copy(&mut tmp_file, &mut opt_file)?;
         #[cfg(unix)]
