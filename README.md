@@ -11,7 +11,7 @@ WARNING: this is a new project, and is very subject to change
 
 ## Setup
 
-1. Build, and install `terve` in `PATH`, e.g. in `/usr/local/bin`
+1. [Build](https://github.com/superblk/terve#development), and install `terve` in `PATH`, e.g. in `/usr/local/bin`
 1. Add the directory `~/.terve/bin` to `PATH` (using e.g. `.bashrc`)
 1. Create the `~/.terve` directory tree by running `terve --bootstrap`
 1. Install Hashicorp's [PGP public key](https://www.hashicorp.com/security) in `~/.terve/etc/terraform.asc` (mode `0444`)
@@ -97,7 +97,7 @@ To build the binary, run `cargo build --release`. Binary is then found in `targe
 
 ## TODOs
 
-- QA: More and better tests
+- QA: Improve test coverage
 - CI: Release workflow (matrix: linux + darwin)
 - Err: more contextual error messages (anyhow?)
 - OS: Windows support (.exe symlink 🤔)
