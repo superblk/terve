@@ -69,6 +69,8 @@ Syntax: `terve i[nstall] <binary> <semver>`
 - `terve i tg "$(cat .terragrunt-version)"` installs terragrunt version defined in `.terragrunt-version`
 - `terve l tg r | grep 0.29. | xargs -n1 -P4 terve i tg` installs all available terragrunt 0.29.x versions
 
+WARNING: terragrunt releases < `0.18.1` do not ship `SHA256SUMS` files, so their file integrity cannot be checked
+
 ### Select
 
 Selects a specific version for use. That version must be installed first.

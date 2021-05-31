@@ -48,7 +48,7 @@ pub fn install_binary_version(
                 utils::check_sha256_sum(&tmp_file, &expected_sha256)?;
             }
             Err(e) if e.status() == Some(StatusCode::NOT_FOUND) => {
-                eprintln!("WARNING: Skipping SHA256 file integrity check, because SHA256SUMS file was not found (this is expected for terragrunt releases < 0.18.1)");
+                eprintln!("WARNING: Skipping SHA256 file integrity check. See https://github.com/superblk/terve#install");
             }
             Err(other) => {
                 return Err(other.into());
