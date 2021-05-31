@@ -1,4 +1,4 @@
-use std::{error::Error, fs::File, time::Duration};
+use std::{fs::File, time::Duration};
 
 use bytes::Bytes;
 use reqwest::blocking::Client;
@@ -8,7 +8,7 @@ pub struct HttpClient {
 }
 
 impl HttpClient {
-    pub fn new() -> Result<HttpClient, Box<dyn Error>> {
+    pub fn new() -> Result<HttpClient, reqwest::Error> {
         let client = Client::builder()
             .user_agent(HTTP_USER_AGENT)
             .connect_timeout(Duration::from_secs(10))
@@ -17,7 +17,7 @@ impl HttpClient {
         Ok(HttpClient { client })
     }
 
-    pub fn download_file(&self, url: &str, mut dest_file: &File) -> Result<u64, Box<dyn Error>> {
+    pub fn download_file(&self, url: &str, mut dest_file: &File) -> Result<u64, reqwest::Error> {
         let num_bytes = self
             .client
             .get(url)
@@ -28,7 +28,7 @@ impl HttpClient {
         Ok(num_bytes)
     }
 
-    pub fn get_bytes(&self, url: &str) -> Result<Bytes, Box<dyn Error>> {
+    pub fn get_bytes(&self, url: &str) -> Result<Bytes, reqwest::Error> {
         let bytes = self
             .client
             .get(url)
@@ -39,7 +39,7 @@ impl HttpClient {
         Ok(bytes)
     }
 
-    pub fn get_text(&self, url: &str, accept: &str) -> Result<String, Box<dyn Error>> {
+    pub fn get_text(&self, url: &str, accept: &str) -> Result<String, reqwest::Error> {
         let text = self
             .client
             .get(url)
