@@ -31,17 +31,18 @@ pub fn install_binary_version(
     version: String,
     dot_dir: DotDir,
     os: String,
+    arch: String,
 ) -> Result<String, Box<dyn Error>> {
     let opt_file_path = dot_dir.opt.join(Binary::Terraform).join(&version);
     if !opt_file_path.exists() {
         let zip_download_url = format!(
-            "{0}{1}/terraform_{1}_{2}_amd64.zip",
-            TF_RELEASES_URL, version, os
+            "{0}{1}/terraform_{1}_{2}_{3}.zip",
+            TF_RELEASES_URL, version, os, arch
         );
         let http_client = HttpClient::new()?;
         let tmp_zip_file = tempfile::tempfile()?;
         http_client.download_file(&zip_download_url, &tmp_zip_file)?;
-        verify_download_integrity(&version, &dot_dir, &os, &http_client, &tmp_zip_file)?;
+        verify_download_integrity(&version, &dot_dir, &os, &arch, &http_client, &tmp_zip_file)?;
         let mut zip_archive = ZipArchive::new(tmp_zip_file)?;
         let mut binary_in_zip = zip_archive.by_name("terraform")?;
         let mut opt_file = File::create(&opt_file_path)?;
@@ -59,6 +60,7 @@ fn verify_download_integrity(
     version: &str,
     dot_dir: &DotDir,
     os: &str,
+    arch: &str,
     http_client: &HttpClient,
     zip_file: &File,
 ) -> Result<(), Box<dyn Error>> {
@@ -80,7 +82,7 @@ fn verify_download_integrity(
         eprintln!("WARNING: Skipping PGP signature verification. See https://github.com/superblk/terve#setup");
     }
     let sha256_regex =
-        Regex::new(format!(r"([a-f0-9]+)\s+terraform_{}_{}_amd64.zip", version, os).as_str())?;
+        Regex::new(format!(r"([a-f0-9]+)\s+terraform_{}_{}_{}.zip", version, os, arch).as_str())?;
     let expected_sha256 = utils::regex_capture_group(&sha256_regex, 1, &shasums)?;
     utils::check_sha256_sum(zip_file, &expected_sha256)?;
     Ok(())

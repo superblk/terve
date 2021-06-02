@@ -28,12 +28,13 @@ pub fn install_binary_version(
     version: String,
     dot_dir: DotDir,
     os: String,
+    arch: String,
 ) -> Result<String, Box<dyn Error>> {
     let opt_file_path = dot_dir.opt.join(Binary::Terragrunt).join(&version);
     if !opt_file_path.exists() {
         let file_download_url = format!(
-            "{}/v{}/terragrunt_{}_amd64",
-            TG_RELEASES_DOWNLOAD_URL, version, os
+            "{}/v{}/terragrunt_{}_{}",
+            TG_RELEASES_DOWNLOAD_URL, version, os, arch
         );
         let shasums_download_url =
             format!("{0}/v{1}/SHA256SUMS", TG_RELEASES_DOWNLOAD_URL, version);
@@ -43,7 +44,7 @@ pub fn install_binary_version(
         match http_client.get_text(&shasums_download_url, "text/plain") {
             Ok(shasums) => {
                 let sha256_regex =
-                    Regex::new(format!(r"([a-f0-9]+)\s+terragrunt_{}_amd64", os).as_str())?;
+                    Regex::new(format!(r"([a-f0-9]+)\s+terragrunt_{}_{}", os, arch).as_str())?;
                 let expected_sha256 = utils::regex_capture_group(&sha256_regex, 1, &shasums)?;
                 utils::check_sha256_sum(&tmp_file, &expected_sha256)?;
             }
