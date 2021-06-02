@@ -1,8 +1,4 @@
-use std::{
-    error::Error,
-    fs::{set_permissions, File, Permissions},
-    io::copy,
-};
+use std::{error::Error, fs::File, io::copy};
 
 use crate::{
     http::HttpClient,
@@ -59,6 +55,7 @@ pub fn install_binary_version(
         copy(&mut tmp_file, &mut opt_file)?;
         #[cfg(unix)]
         {
+            use std::fs::{set_permissions, Permissions};
             use std::os::unix::fs::PermissionsExt;
             set_permissions(&opt_file_path, Permissions::from_mode(0o755))?;
         }

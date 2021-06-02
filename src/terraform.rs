@@ -1,8 +1,4 @@
-use std::{
-    error::Error,
-    fs::{set_permissions, File, Permissions},
-    io::copy,
-};
+use std::{error::Error, fs::File, io::copy};
 
 use pgp::{types::KeyTrait, Deserializable, SignedPublicKey, StandaloneSignature};
 use regex::Regex;
@@ -49,6 +45,7 @@ pub fn install_binary_version(
         copy(&mut binary_in_zip, &mut opt_file)?;
         #[cfg(unix)]
         {
+            use std::fs::{set_permissions, Permissions};
             use std::os::unix::fs::PermissionsExt;
             set_permissions(&opt_file_path, Permissions::from_mode(0o755))?;
         }
