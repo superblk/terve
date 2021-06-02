@@ -1,6 +1,6 @@
 use std::{
     error::Error,
-    fmt::Display,
+    fmt::{Debug, Display},
     fs::{create_dir_all, read_dir, read_link, remove_file},
     path::{Path, PathBuf},
     str::FromStr,
@@ -80,6 +80,7 @@ impl AsRef<Path> for Binary {
 }
 
 pub struct DotDir {
+    root: PathBuf,
     pub bin: PathBuf,
     pub etc: PathBuf,
     pub opt: PathBuf,
@@ -87,15 +88,26 @@ pub struct DotDir {
 
 impl DotDir {
     pub fn bootstrap(home_dir: &Path) -> Result<DotDir, Box<dyn Error>> {
-        let dot_dir = home_dir.join(".terve");
-        let bin = dot_dir.join("bin");
-        let etc = dot_dir.join("etc");
-        let opt = dot_dir.join("opt");
+        let root = home_dir.join(".terve");
+        let bin = root.join("bin");
+        let etc = root.join("etc");
+        let opt = root.join("opt");
         create_dir_all(&bin)?;
         create_dir_all(&etc)?;
         create_dir_all(opt.join(Binary::Terraform))?;
         create_dir_all(opt.join(Binary::Terragrunt))?;
-        Ok(DotDir { bin, etc, opt })
+        Ok(DotDir {
+            root,
+            bin,
+            etc,
+            opt,
+        })
+    }
+}
+
+impl Display for DotDir {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.root.fmt(f)
     }
 }
 
