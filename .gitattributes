@@ -1,0 +1,3 @@
+tests/*.asc text eol=lf
+tests/special.txt text eol=lf
+tests/*SHA256SUM text eol=lf

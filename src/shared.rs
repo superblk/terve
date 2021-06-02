@@ -60,8 +60,20 @@ impl Display for Binary {
 impl AsRef<Path> for Binary {
     fn as_ref(&self) -> &Path {
         let path = match *self {
-            Binary::Terraform => "terraform",
-            Binary::Terragrunt => "terragrunt",
+            Binary::Terraform => {
+                if cfg!(unix) {
+                    "terraform"
+                } else {
+                    "terraform.exe"
+                }
+            }
+            Binary::Terragrunt => {
+                if cfg!(unix) {
+                    "terragrunt"
+                } else {
+                    "terragrunt.exe"
+                }
+            }
         };
         Path::new(path)
     }
@@ -81,8 +93,8 @@ impl DotDir {
         let opt = dot_dir.join("opt");
         create_dir_all(&bin)?;
         create_dir_all(&etc)?;
-        create_dir_all(opt.join("terraform"))?;
-        create_dir_all(opt.join("terragrunt"))?;
+        create_dir_all(opt.join(Binary::Terraform))?;
+        create_dir_all(opt.join(Binary::Terragrunt))?;
         Ok(DotDir { bin, etc, opt })
     }
 }
