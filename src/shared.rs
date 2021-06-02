@@ -117,7 +117,13 @@ pub fn select_binary_version(
     }
     #[cfg(unix)]
     {
-        std::os::unix::fs::symlink(&opt_file_path, &symlink_path)?;
+        use std::os::unix::fs::symlink;
+        symlink(&opt_file_path, &symlink_path)?;
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::symlink_file;
+        symlink_file(&opt_file_path, &symlink_path)?;
     }
     Ok(format!("Selected {} {}", binary, version))
 }
