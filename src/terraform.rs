@@ -11,6 +11,8 @@ use crate::{
     utils,
 };
 
+use std::env::consts::EXE_SUFFIX;
+
 pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
     let http_client = HttpClient::new()?;
     let releases_html = http_client.get_text(TF_RELEASES_URL, "text/html")?;
@@ -35,12 +37,13 @@ pub fn install_binary_version(
             "{0}{1}/terraform_{1}_{2}_{3}.zip",
             TF_RELEASES_URL, version, os, arch
         );
-        let http_client = HttpClient::new()?;
         let tmp_zip_file = tempfile::tempfile()?;
+        let http_client = HttpClient::new()?;
         http_client.download_file(&zip_download_url, &tmp_zip_file)?;
         verify_download_integrity(&version, &dot_dir, &os, &arch, &http_client, &tmp_zip_file)?;
         let mut zip_archive = ZipArchive::new(tmp_zip_file)?;
-        let mut binary_in_zip = zip_archive.by_name("terraform")?;
+        let file_name = format!("terraform{}", EXE_SUFFIX);
+        let mut binary_in_zip = zip_archive.by_name(&file_name)?;
         let mut opt_file = File::create(&opt_file_path)?;
         copy(&mut binary_in_zip, &mut opt_file)?;
         #[cfg(unix)]

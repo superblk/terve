@@ -73,9 +73,17 @@ fn test_terraform_all(home_dir: &PathBuf) {
     };
 
     let opt_file_path = if cfg!(unix) {
-        home_dir.join(".terve").join("opt").join("terraform").join("0.14.11")
+        home_dir
+            .join(".terve")
+            .join("opt")
+            .join("terraform")
+            .join("0.14.11")
     } else {
-        home_dir.join(".terve").join("opt").join("terraform.exe").join("0.14.11")
+        home_dir
+            .join(".terve")
+            .join("opt")
+            .join("terraform.exe")
+            .join("0.14.11")
     };
 
     assert!(
@@ -163,9 +171,17 @@ fn test_terragrunt_all(home_dir: &PathBuf) {
     };
 
     let opt_file_path = if cfg!(unix) {
-        home_dir.join(".terve").join("opt").join("terragrunt").join("0.29.2")
+        home_dir
+            .join(".terve")
+            .join("opt")
+            .join("terragrunt")
+            .join("0.29.2")
     } else {
-        home_dir.join(".terve").join("opt").join("terragrunt.exe").join("0.29.2")
+        home_dir
+            .join(".terve")
+            .join("opt")
+            .join("terragrunt.exe")
+            .join("0.29.2")
     };
 
     assert!(

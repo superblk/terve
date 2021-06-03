@@ -8,6 +8,7 @@ use crate::{
 use regex::Regex;
 use reqwest::StatusCode;
 use semver::{Prerelease, Version};
+use std::env::consts::EXE_SUFFIX;
 
 pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
     let mut versions: Vec<Version> = utils::git_list_remote_tags(TG_GIT_REPOSITORY_URL)?
@@ -28,19 +29,16 @@ pub fn install_binary_version(
 ) -> Result<String, Box<dyn Error>> {
     let opt_file_path = dot_dir.opt.join(Binary::Terragrunt).join(&version);
     if !opt_file_path.exists() {
-        let file_download_url = format!(
-            "{}/v{}/terragrunt_{}_{}",
-            TG_RELEASES_DOWNLOAD_URL, version, os, arch
-        );
+        let file_name = format!("terragrunt_{}_{}{}", os, arch, EXE_SUFFIX);
+        let file_download_url = format!("{}/v{}/{}", TG_RELEASES_DOWNLOAD_URL, version, file_name);
         let shasums_download_url =
             format!("{0}/v{1}/SHA256SUMS", TG_RELEASES_DOWNLOAD_URL, version);
-        let http_client = HttpClient::new()?;
         let mut tmp_file = tempfile::tempfile()?;
+        let http_client = HttpClient::new()?;
         http_client.download_file(&file_download_url, &tmp_file)?;
         match http_client.get_text(&shasums_download_url, "text/plain") {
             Ok(shasums) => {
-                let sha256_regex =
-                    Regex::new(format!(r"([a-f0-9]+)\s+terragrunt_{}_{}", os, arch).as_str())?;
+                let sha256_regex = Regex::new(format!(r"([a-f0-9]+)\s+{}", file_name).as_str())?;
                 let expected_sha256 = utils::regex_capture_group(&sha256_regex, 1, &shasums)?;
                 utils::check_sha256_sum(&tmp_file, &expected_sha256)?;
             }
