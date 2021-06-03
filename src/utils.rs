@@ -49,7 +49,7 @@ pub fn to_sorted_multiline_string(versions: &mut Vec<Version>) -> String {
         .iter()
         .map(|v| v.to_string())
         .collect::<Vec<String>>()
-        .join("\n");
+        .join(NEWLINE);
     result
 }
 
@@ -83,6 +83,12 @@ pub fn git_list_remote_tags(repo_url: &str) -> Result<Vec<String>, Box<dyn Error
     remote.disconnect()?;
     Ok(result)
 }
+
+#[cfg(unix)]
+const NEWLINE: &str = "\n";
+
+#[cfg(windows)]
+const NEWLINE: &str = "\r\n";
 
 #[cfg(test)]
 mod tests {
@@ -132,7 +138,7 @@ mod tests {
             .filter_map(|s| Version::parse(s).ok())
             .collect();
         assert_eq!(
-            "0.15.4\n0.13.4\n0.1.0",
+            format!("0.15.4{0}0.13.4{0}0.1.0", NEWLINE),
             to_sorted_multiline_string(&mut versions)
         );
     }
