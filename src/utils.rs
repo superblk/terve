@@ -54,15 +54,15 @@ pub fn to_sorted_multiline_string(versions: &mut Vec<Version>) -> String {
 }
 
 pub fn verify_detached_pgp_signature(
-    content: &str,
+    content: &[u8],
     signature: &StandaloneSignature,
     public_key: &SignedPublicKey,
 ) -> Result<(), Box<dyn Error>> {
-    if public_key.is_signing_key() && signature.verify(&public_key, &content.as_bytes()).is_ok() {
+    if public_key.is_signing_key() && signature.verify(&public_key, content).is_ok() {
         return Ok(());
     } else {
         for sub_key in &public_key.public_subkeys {
-            if sub_key.is_signing_key() && signature.verify(sub_key, &content.as_bytes()).is_ok() {
+            if sub_key.is_signing_key() && signature.verify(sub_key, content).is_ok() {
                 return Ok(());
             }
         }
@@ -154,7 +154,7 @@ mod tests {
             File::open("tests/terraform_0.13.1_SHA256SUMS.72D7468F.sig").unwrap(),
         )
         .unwrap();
-        assert!(verify_detached_pgp_signature(&content, &signature, &public_key).is_ok());
+        assert!(verify_detached_pgp_signature(content.as_bytes(), &signature, &public_key).is_ok());
     }
 
     #[test]
@@ -168,7 +168,9 @@ mod tests {
             File::open("tests/terraform_0.13.1_SHA256SUMS.348FFC4C.sig").unwrap(),
         )
         .unwrap();
-        assert!(verify_detached_pgp_signature(&content, &signature, &public_key).is_err());
+        assert!(
+            verify_detached_pgp_signature(content.as_bytes(), &signature, &public_key).is_err()
+        );
     }
 
     #[test]
