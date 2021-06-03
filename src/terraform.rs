@@ -76,7 +76,7 @@ fn verify_download_integrity(
         let signature = StandaloneSignature::from_bytes(&signature_bytes[..])?;
         utils::verify_detached_pgp_signature(&shasums.as_bytes(), &signature, &public_key)?;
     } else {
-        eprintln!("WARNING: Skipping PGP signature verification. See https://github.com/superblk/terve#setup");
+        eprint!("WARNING: Skipping PGP signature verification. See https://github.com/superblk/terve#setup{}", utils::NEWLINE);
     }
     let sha256_regex =
         Regex::new(format!(r"([a-f0-9]+)\s+terraform_{}_{}_{}.zip", version, os, arch).as_str())?;

@@ -18,12 +18,12 @@ fn main() {
     process::exit(match run() {
         Ok(s) => {
             if !s.is_empty() {
-                println!("{}", s);
+                print!("{}{}", s, utils::NEWLINE);
             }
             0
         }
         Err(e) => {
-            eprintln!("ERROR: {}", e);
+            eprint!("ERROR: {}{}", e, utils::NEWLINE);
             1
         }
     });

@@ -85,10 +85,10 @@ pub fn git_list_remote_tags(repo_url: &str) -> Result<Vec<String>, Box<dyn Error
 }
 
 #[cfg(unix)]
-const NEWLINE: &str = "\n";
+pub const NEWLINE: &str = "\n";
 
 #[cfg(windows)]
-const NEWLINE: &str = "\r\n";
+pub const NEWLINE: &str = "\r\n";
 
 #[cfg(test)]
 mod tests {
