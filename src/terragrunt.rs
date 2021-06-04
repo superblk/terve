@@ -1,8 +1,4 @@
-use std::{
-    error::Error,
-    fs::{set_permissions, File, Permissions},
-    io::copy,
-};
+use std::{error::Error, fs::File, io::copy};
 
 use crate::{
     http::HttpClient,
@@ -12,6 +8,7 @@ use crate::{
 use regex::Regex;
 use reqwest::StatusCode;
 use semver::{Prerelease, Version};
+use std::env::consts::EXE_SUFFIX;
 
 pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
     let mut versions: Vec<Version> = utils::git_list_remote_tags(TG_GIT_REPOSITORY_URL)?
@@ -28,27 +25,25 @@ pub fn install_binary_version(
     version: String,
     dot_dir: DotDir,
     os: String,
+    arch: String,
 ) -> Result<String, Box<dyn Error>> {
     let opt_file_path = dot_dir.opt.join(Binary::Terragrunt).join(&version);
     if !opt_file_path.exists() {
-        let file_download_url = format!(
-            "{}/v{}/terragrunt_{}_amd64",
-            TG_RELEASES_DOWNLOAD_URL, version, os
-        );
+        let file_name = format!("terragrunt_{}_{}{}", os, arch, EXE_SUFFIX);
+        let file_download_url = format!("{}/v{}/{}", TG_RELEASES_DOWNLOAD_URL, version, file_name);
         let shasums_download_url =
             format!("{0}/v{1}/SHA256SUMS", TG_RELEASES_DOWNLOAD_URL, version);
-        let http_client = HttpClient::new()?;
         let mut tmp_file = tempfile::tempfile()?;
+        let http_client = HttpClient::new()?;
         http_client.download_file(&file_download_url, &tmp_file)?;
         match http_client.get_text(&shasums_download_url, "text/plain") {
             Ok(shasums) => {
-                let sha256_regex =
-                    Regex::new(format!(r"([a-f0-9]+)\s+terragrunt_{}_amd64", os).as_str())?;
+                let sha256_regex = Regex::new(format!(r"([a-f0-9]+)\s+{}", file_name).as_str())?;
                 let expected_sha256 = utils::regex_capture_group(&sha256_regex, 1, &shasums)?;
                 utils::check_sha256_sum(&tmp_file, &expected_sha256)?;
             }
             Err(e) if e.status() == Some(StatusCode::NOT_FOUND) => {
-                eprintln!("WARNING: Skipping SHA256 file integrity check. See https://github.com/superblk/terve#install");
+                eprint!("WARNING: Skipping SHA256 file integrity check. See https://github.com/superblk/terve#install{}", utils::NEWLINE);
             }
             Err(other) => {
                 return Err(other.into());
@@ -58,6 +53,7 @@ pub fn install_binary_version(
         copy(&mut tmp_file, &mut opt_file)?;
         #[cfg(unix)]
         {
+            use std::fs::{set_permissions, Permissions};
             use std::os::unix::fs::PermissionsExt;
             set_permissions(&opt_file_path, Permissions::from_mode(0o755))?;
         }

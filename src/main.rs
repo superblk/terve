@@ -2,7 +2,10 @@ use dirs::home_dir;
 use pico_args::Arguments;
 use semver::Version;
 use shared::{Action, Binary, DotDir};
-use std::{env::consts::OS, str::FromStr};
+use std::{
+    env::consts::{ARCH, OS},
+    str::FromStr,
+};
 use std::{error::Error, process};
 
 mod http;
@@ -15,12 +18,12 @@ fn main() {
     process::exit(match run() {
         Ok(s) => {
             if !s.is_empty() {
-                println!("{}", s);
+                print!("{}{}", s, utils::NEWLINE);
             }
             0
         }
         Err(e) => {
-            eprintln!("ERROR: {}", e);
+            eprint!("ERROR: {}{}", e, utils::NEWLINE);
             1
         }
     });
@@ -41,29 +44,29 @@ fn run() -> Result<String, Box<dyn Error>> {
         let dot_dir = DotDir::bootstrap(&home)?;
 
         if args.contains(["-b", "--bootstrap"]) {
-            return Ok(format!("Created {}/.terve", home.display()));
+            return Ok(format!("Created {}", dot_dir));
         }
 
-        let (action, binary, version, os) = get_params(args)?;
+        let (action, binary, version, os, arch) = get_params(args)?;
 
-        match (action, binary, version, os) {
-            (Action::List, binary, None, _) => shared::list_installed_versions(binary, dot_dir),
-            (Action::List, Binary::Terraform, Some(v), _) if v.is_remote() => {
+        match (action, binary, version) {
+            (Action::List, binary, None) => shared::list_installed_versions(binary, dot_dir),
+            (Action::List, Binary::Terraform, Some(v)) if v.is_remote() => {
                 terraform::list_available_versions()
             }
-            (Action::List, Binary::Terragrunt, Some(v), _) if v.is_remote() => {
+            (Action::List, Binary::Terragrunt, Some(v)) if v.is_remote() => {
                 terragrunt::list_available_versions()
             }
-            (Action::Install, Binary::Terraform, Some(v), os) if v.is_semver() => {
-                terraform::install_binary_version(v, dot_dir, os)
+            (Action::Install, Binary::Terraform, Some(v)) if v.is_semver() => {
+                terraform::install_binary_version(v, dot_dir, os, arch)
             }
-            (Action::Install, Binary::Terragrunt, Some(v), os) if v.is_semver() => {
-                terragrunt::install_binary_version(v, dot_dir, os)
+            (Action::Install, Binary::Terragrunt, Some(v)) if v.is_semver() => {
+                terragrunt::install_binary_version(v, dot_dir, os, arch)
             }
-            (Action::Select, binary, Some(v), _) if v.is_semver() => {
+            (Action::Select, binary, Some(v)) if v.is_semver() => {
                 shared::select_binary_version(binary, v, dot_dir)
             }
-            (Action::Remove, binary, Some(v), _) if v.is_semver() => {
+            (Action::Remove, binary, Some(v)) if v.is_semver() => {
                 shared::remove_binary_version(binary, v, dot_dir)
             }
             _ => Err(INVALID_ARGS_MSG.into()),
@@ -73,7 +76,7 @@ fn run() -> Result<String, Box<dyn Error>> {
     }
 }
 
-type Params = (Action, Binary, Option<String>, String);
+type Params = (Action, Binary, Option<String>, String, String);
 
 fn get_params(mut args: Arguments) -> Result<Params, Box<dyn Error>> {
     let action: Action = match args.subcommand()? {
@@ -91,10 +94,16 @@ fn get_params(mut args: Arguments) -> Result<Params, Box<dyn Error>> {
     let os = match OS {
         "linux" => "linux".to_string(),
         "macos" => "darwin".to_string(),
+        "windows" => "windows".to_string(),
         os => panic!("Unsupported OS: {}", os),
     };
 
-    Ok((action, binary, version, os))
+    let arch = match ARCH {
+        "x86_64" => "amd64".to_string(),
+        arch => panic!("Unsupported architecture: {}", arch),
+    };
+
+    Ok((action, binary, version, os, arch))
 }
 
 trait VersionQualifier {

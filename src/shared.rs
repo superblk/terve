@@ -1,6 +1,6 @@
 use std::{
     error::Error,
-    fmt::Display,
+    fmt::{Debug, Display},
     fs::{create_dir_all, read_dir, read_link, remove_file},
     path::{Path, PathBuf},
     str::FromStr,
@@ -60,14 +60,27 @@ impl Display for Binary {
 impl AsRef<Path> for Binary {
     fn as_ref(&self) -> &Path {
         let path = match *self {
-            Binary::Terraform => "terraform",
-            Binary::Terragrunt => "terragrunt",
+            Binary::Terraform => {
+                if cfg!(unix) {
+                    "terraform"
+                } else {
+                    "terraform.exe"
+                }
+            }
+            Binary::Terragrunt => {
+                if cfg!(unix) {
+                    "terragrunt"
+                } else {
+                    "terragrunt.exe"
+                }
+            }
         };
         Path::new(path)
     }
 }
 
 pub struct DotDir {
+    root: PathBuf,
     pub bin: PathBuf,
     pub etc: PathBuf,
     pub opt: PathBuf,
@@ -75,15 +88,26 @@ pub struct DotDir {
 
 impl DotDir {
     pub fn bootstrap(home_dir: &Path) -> Result<DotDir, Box<dyn Error>> {
-        let dot_dir = home_dir.join(".terve");
-        let bin = dot_dir.join("bin");
-        let etc = dot_dir.join("etc");
-        let opt = dot_dir.join("opt");
+        let root = home_dir.join(".terve");
+        let bin = root.join("bin");
+        let etc = root.join("etc");
+        let opt = root.join("opt");
         create_dir_all(&bin)?;
         create_dir_all(&etc)?;
-        create_dir_all(opt.join("terraform"))?;
-        create_dir_all(opt.join("terragrunt"))?;
-        Ok(DotDir { bin, etc, opt })
+        create_dir_all(opt.join(Binary::Terraform))?;
+        create_dir_all(opt.join(Binary::Terragrunt))?;
+        Ok(DotDir {
+            root,
+            bin,
+            etc,
+            opt,
+        })
+    }
+}
+
+impl Display for DotDir {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.root.fmt(f)
     }
 }
 
@@ -117,7 +141,13 @@ pub fn select_binary_version(
     }
     #[cfg(unix)]
     {
-        std::os::unix::fs::symlink(&opt_file_path, &symlink_path)?;
+        use std::os::unix::fs::symlink;
+        symlink(&opt_file_path, &symlink_path)?;
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::symlink_file;
+        symlink_file(&opt_file_path, &symlink_path)?;
     }
     Ok(format!("Selected {} {}", binary, version))
 }

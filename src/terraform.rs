@@ -1,8 +1,4 @@
-use std::{
-    error::Error,
-    fs::{set_permissions, File, Permissions},
-    io::copy,
-};
+use std::{error::Error, fs::File, io::copy};
 
 use pgp::{types::KeyTrait, Deserializable, SignedPublicKey, StandaloneSignature};
 use regex::Regex;
@@ -14,6 +10,8 @@ use crate::{
     shared::{Binary, DotDir},
     utils,
 };
+
+use std::env::consts::EXE_SUFFIX;
 
 pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
     let http_client = HttpClient::new()?;
@@ -31,23 +29,26 @@ pub fn install_binary_version(
     version: String,
     dot_dir: DotDir,
     os: String,
+    arch: String,
 ) -> Result<String, Box<dyn Error>> {
     let opt_file_path = dot_dir.opt.join(Binary::Terraform).join(&version);
     if !opt_file_path.exists() {
         let zip_download_url = format!(
-            "{0}{1}/terraform_{1}_{2}_amd64.zip",
-            TF_RELEASES_URL, version, os
+            "{0}{1}/terraform_{1}_{2}_{3}.zip",
+            TF_RELEASES_URL, version, os, arch
         );
-        let http_client = HttpClient::new()?;
         let tmp_zip_file = tempfile::tempfile()?;
+        let http_client = HttpClient::new()?;
         http_client.download_file(&zip_download_url, &tmp_zip_file)?;
-        verify_download_integrity(&version, &dot_dir, &os, &http_client, &tmp_zip_file)?;
+        verify_download_integrity(&version, &dot_dir, &os, &arch, &http_client, &tmp_zip_file)?;
         let mut zip_archive = ZipArchive::new(tmp_zip_file)?;
-        let mut binary_in_zip = zip_archive.by_name("terraform")?;
+        let file_name = format!("terraform{}", EXE_SUFFIX);
+        let mut binary_in_zip = zip_archive.by_name(&file_name)?;
         let mut opt_file = File::create(&opt_file_path)?;
         copy(&mut binary_in_zip, &mut opt_file)?;
         #[cfg(unix)]
         {
+            use std::fs::{set_permissions, Permissions};
             use std::os::unix::fs::PermissionsExt;
             set_permissions(&opt_file_path, Permissions::from_mode(0o755))?;
         }
@@ -59,6 +60,7 @@ fn verify_download_integrity(
     version: &str,
     dot_dir: &DotDir,
     os: &str,
+    arch: &str,
     http_client: &HttpClient,
     zip_file: &File,
 ) -> Result<(), Box<dyn Error>> {
@@ -75,12 +77,12 @@ fn verify_download_integrity(
         );
         let signature_bytes = http_client.get_bytes(&shasums_sig_download_url)?;
         let signature = StandaloneSignature::from_bytes(&signature_bytes[..])?;
-        utils::verify_detached_pgp_signature(&shasums, &signature, &public_key)?;
+        utils::verify_detached_pgp_signature(&shasums.as_bytes(), &signature, &public_key)?;
     } else {
-        eprintln!("WARNING: Skipping PGP signature verification. See https://github.com/superblk/terve#setup");
+        eprint!("WARNING: Skipping PGP signature verification. See https://github.com/superblk/terve#setup{}", utils::NEWLINE);
     }
     let sha256_regex =
-        Regex::new(format!(r"([a-f0-9]+)\s+terraform_{}_{}_amd64.zip", version, os).as_str())?;
+        Regex::new(format!(r"([a-f0-9]+)\s+terraform_{}_{}_{}.zip", version, os, arch).as_str())?;
     let expected_sha256 = utils::regex_capture_group(&sha256_regex, 1, &shasums)?;
     utils::check_sha256_sum(zip_file, &expected_sha256)?;
     Ok(())

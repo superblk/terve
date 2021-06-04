@@ -14,13 +14,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-10.15]
+        os: [ubuntu-20.04, macos-10.15, windows-2016]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Run build
+      - name: Run debug build
         run: cargo build
 
-      - name: Run tests
+      - name: Run all tests
         run: cargo test

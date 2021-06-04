@@ -8,6 +8,7 @@ WARNING: this is a new project, and is very subject to change
 
 - Linux (amd64)
 - MacOS (amd64)
+- Windows (amd64)
 
 ## Setup
 
@@ -102,4 +103,3 @@ Visual Studio Code with [rust-analyzer](https://marketplace.visualstudio.com/ite
 - QA: Improve test coverage
 - CI: Release workflow (matrix: linux + darwin)
 - Err: more contextual error messages (anyhow?)
-- OS: Windows support (.exe symlink 🤔)?
