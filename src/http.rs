@@ -11,7 +11,7 @@ impl HttpClient {
     pub fn new() -> Result<HttpClient, reqwest::Error> {
         let client = Client::builder()
             .user_agent(HTTP_USER_AGENT)
-            .connect_timeout(Duration::from_secs(10))
+            .connect_timeout(CONNECT_TIMEOUT)
             .https_only(true)
             .build()?;
         Ok(HttpClient { client })
@@ -50,5 +50,7 @@ impl HttpClient {
         Ok(text)
     }
 }
+
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 
 const HTTP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
