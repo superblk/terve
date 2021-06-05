@@ -44,7 +44,7 @@ fn run() -> Result<String, Box<dyn Error>> {
         let dot_dir = DotDir::bootstrap(&home)?;
 
         if args.contains(["-b", "--bootstrap"]) {
-            return Ok(format!("Created {}", dot_dir));
+            return Ok(format!("Created {}", dot_dir.root.display()));
         }
 
         let (action, binary, version, os, arch) = get_params(args)?;

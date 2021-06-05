@@ -19,9 +19,11 @@ WARNING: this is a new project, and is very subject to change
     - This public key is used to verify terraform download PGP signatures
     - If not installed (or bad file permissions), terve will log a warning for each terraform install
 
-## Layout
+## How it works
 
-Terve keeps files in directory `$HOME/.terve` like so:
+Terve uses simple symlinks to point to selected versions.
+
+All files are kept in directory `$HOME/.terve` like so (example for Linux):
 
 ```txt
 /home/whoami/.terve
@@ -100,6 +102,6 @@ Visual Studio Code with [rust-analyzer](https://marketplace.visualstudio.com/ite
 
 ## TODOs
 
+- Win 10: copy to bin if symlink support unavailable?
 - QA: Improve test coverage
 - CI: Release workflow (matrix: linux + darwin)
-- Err: more contextual error messages (anyhow?)

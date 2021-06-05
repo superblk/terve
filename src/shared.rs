@@ -1,6 +1,6 @@
 use std::{
     error::Error,
-    fmt::{Debug, Display},
+    fmt::Display,
     fs::{create_dir_all, read_dir, read_link, remove_file},
     path::{Path, PathBuf},
     str::FromStr,
@@ -80,7 +80,7 @@ impl AsRef<Path> for Binary {
 }
 
 pub struct DotDir {
-    root: PathBuf,
+    pub root: PathBuf,
     pub bin: PathBuf,
     pub etc: PathBuf,
     pub opt: PathBuf,
@@ -102,12 +102,6 @@ impl DotDir {
             etc,
             opt,
         })
-    }
-}
-
-impl Display for DotDir {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.root.fmt(f)
     }
 }
 
