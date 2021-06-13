@@ -21,7 +21,9 @@ WARNING: this is a new project, and is very subject to change
 
 ## How it works
 
-Terve uses simple symlinks to point to selected versions.
+Terve uses plain old symlinks to point to selected tool versions.
+
+NOTE: on Windows 10, symlink creation requires developer mode or admin permissions. If symlink support is unavailable, terve falls back to copying versioned binaries into `.terve/bin/` and logs a warning.
 
 All files are kept in directory `$HOME/.terve` like so (example for Linux):
 
@@ -92,6 +94,43 @@ Syntax: `terve r[emove] <binary> <semver>`
 - `terve r tf 0.12.31` removes terraform version 0.12.31
 - `terve l tf | grep 0.11. | xargs -n1 terve r tf` removes all installed terraform 0.11.x versions
 
+## Shell recipes
+
+### terve-use
+
+Use tool versions defined in `.terraform-version` and `.terragrunt-version` (in current working directory or any parent directory)
+
+```sh
+#!/bin/sh
+
+upcat() {
+    file="$1"
+    while [ "$PWD" != "/" ]; do
+        if [ -r "$file" ]; then
+            cat "$file"
+            break
+        fi
+        cd ..
+    done
+}
+
+tf_version="$(upcat .terraform-version)"
+tg_version="$(upcat .terragrunt-version)"
+
+if [ -z "$tf_version" ]; then
+    echo "ERROR: No .terraform-version found"
+    exit 1
+fi
+
+if [ -z "$tg_version" ]; then
+    echo "ERROR: No .terragrunt-version found"
+    exit 2
+fi
+
+terve i tf "$tf_version" && terve s tf "$tf_version"
+terve i tg "$tg_version" && terve s tg "$tg_version"
+```
+
 ## Development
 
 You need [cargo](https://rustup.rs/) and [OpenSSL pre-requisites](https://docs.rs/openssl#automatic). To run all tests, run `cargo test`.
@@ -102,6 +141,5 @@ Visual Studio Code with [rust-analyzer](https://marketplace.visualstudio.com/ite
 
 ## TODOs
 
-- Win 10: copy to bin if symlink support unavailable?
 - QA: Improve test coverage
 - CI: Release workflow (matrix: linux + darwin)
