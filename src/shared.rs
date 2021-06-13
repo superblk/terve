@@ -141,8 +141,9 @@ pub fn select_binary_version(
     #[cfg(windows)]
     {
         use std::fs::copy;
+        use std::io;
         use std::os::windows::fs::symlink_file;
-        let copy_binary = |_| {
+        let copy_binary = |_| -> io::Result<()> {
             eprint!("WARNING: Unable to create symlink, copying binary instead. See https://github.com/superblk/terve#how-it-works{}", utils::NEWLINE);
             copy(&opt_file_path, &symlink_path)?;
             Ok(())

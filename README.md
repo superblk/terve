@@ -23,9 +23,9 @@ WARNING: this is a new project, and is very subject to change
 
 Terve uses plain old symlinks to point to selected binary versions.
 
-NOTE: on Windows 10, symlink creation requires developer mode or admin permissions. If symlink support is unavailable, terve falls back to copying the binary into `$HOME/.terve/bin/` and logs a warning.
+NOTE: on Windows 10, symlink creation requires developer mode or admin permissions. If symlink support is unavailable, terve falls back to copying the binary into `~/.terve/bin/` and logs a warning.
 
-All files are kept in directory `$HOME/.terve` like so (example for Linux):
+All files are kept in directory `~/.terve` like so (example tree is for Linux):
 
 ```txt
 /home/whoami/.terve
