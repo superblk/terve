@@ -21,17 +21,15 @@ WARNING: this is a new project, and is very subject to change
 
 ## How it works
 
-Terve uses plain old symlinks to point to selected binary versions.
+Terve uses hard links to point to selected terraform/terragrunt binary versions.
 
-NOTE: on Windows 10, symlink creation requires developer mode or admin permissions. If symlink support is unavailable, terve falls back to copying the binary into `~/.terve/bin/` and logs a warning.
-
-All files are kept in directory `~/.terve` like so (example tree is for Linux):
+All files are kept in directory `~/.terve` like so (example directory tree for Linux):
 
 ```txt
 /home/whoami/.terve
 ├── bin
-│   ├── terraform -> /home/whoami/.terve/opt/terraform/0.15.4
-│   └── terragrunt -> /home/whoami/.terve/opt/terragrunt/0.28.10
+│   ├── terraform
+│   └── terragrunt
 ├── etc
 │   └── terraform.asc
 └── opt

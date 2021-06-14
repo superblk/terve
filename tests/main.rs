@@ -1,7 +1,8 @@
 use assert_cmd::prelude::*;
 use dirs::home_dir;
 use predicates::prelude::*;
-use std::{env, fs::read_link, path::PathBuf, process::Command};
+use same_file::is_same_file;
+use std::{env, path::PathBuf, process::Command};
 use tempfile::tempdir;
 
 #[test]
@@ -66,7 +67,7 @@ fn test_terraform_all(home_dir: &PathBuf) {
             .stdout(predicate::str::contains("Selected terraform 0.14.11"));
     }
 
-    let symlink_path = if cfg!(unix) {
+    let hard_link_path = if cfg!(unix) {
         home_dir.join(".terve").join("bin").join("terraform")
     } else {
         home_dir.join(".terve").join("bin").join("terraform.exe")
@@ -86,11 +87,14 @@ fn test_terraform_all(home_dir: &PathBuf) {
             .join("0.14.11")
     };
 
-    assert!(
-        symlink_path.exists()
-            && opt_file_path.exists()
-            && read_link(symlink_path).expect("Failed to read symlink") == opt_file_path
-    );
+    assert!(is_same_file(&hard_link_path, &opt_file_path).unwrap());
+
+    Command::new(hard_link_path)
+        .arg("--version")
+        .assert()
+        .success()
+        .code(0)
+        .stdout(predicate::str::contains("0.14.11"));
 
     // Assert idempotency by running the command twice
     for _ in 1..=2 {
@@ -164,7 +168,7 @@ fn test_terragrunt_all(home_dir: &PathBuf) {
             .stdout(predicate::str::contains("Selected terragrunt 0.29.2"));
     }
 
-    let symlink_path = if cfg!(unix) {
+    let hard_link_path = if cfg!(unix) {
         home_dir.join(".terve").join("bin").join("terragrunt")
     } else {
         home_dir.join(".terve").join("bin").join("terragrunt.exe")
@@ -184,11 +188,14 @@ fn test_terragrunt_all(home_dir: &PathBuf) {
             .join("0.29.2")
     };
 
-    assert!(
-        symlink_path.exists()
-            && opt_file_path.exists()
-            && read_link(symlink_path).expect("Failed to read symlink") == opt_file_path
-    );
+    assert!(is_same_file(&hard_link_path, &opt_file_path).unwrap());
+
+    Command::new(hard_link_path)
+        .arg("--version")
+        .assert()
+        .success()
+        .code(0)
+        .stdout(predicate::str::contains("terragrunt version v0.29.2"));
 
     // Assert idempotency by running the command twice
     for _ in 1..=2 {
