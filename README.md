@@ -21,7 +21,7 @@ WARNING: this is a new project, and is very subject to change
 
 ## How it works
 
-Terve uses hard links to point to selected terraform/terragrunt binary versions.
+Terve uses hard links to configure selected terraform/terragrunt binary versions.
 
 All files are kept in directory `~/.terve` like so (example directory tree for Linux):
 
@@ -92,7 +92,7 @@ Syntax: `terve r[emove] <binary> <semver>`
 - `terve r tf 0.12.31` removes terraform version 0.12.31
 - `terve l tf | grep 0.11. | xargs -n1 terve r tf` removes all installed terraform 0.11.x versions
 
-## Shell recipes
+## Shell extensions
 
 ### terve-use
 
