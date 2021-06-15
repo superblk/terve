@@ -21,6 +21,7 @@ git2        = { version = "~0.13", default-features = false, features = ["https"
 [dev-dependencies]
 assert_cmd  = "~1.0"
 predicates  = "~1.0"
+same-file   = "~1.0"
 
 [profile.release]
 codegen-units = 1

@@ -1,7 +1,7 @@
 use std::{
     error::Error,
     fmt::Display,
-    fs::{create_dir_all, read_dir, read_link, remove_file},
+    fs::{create_dir_all, hard_link, read_dir, remove_file},
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -121,28 +121,19 @@ pub fn select_binary_version(
     version: String,
     dot_dir: DotDir,
 ) -> Result<String, Box<dyn Error>> {
-    let symlink_path = dot_dir.bin.join(&binary);
     let opt_file_path = dot_dir.opt.join(&binary).join(&version);
-    if !Path::new(&opt_file_path).exists() {
+    if !opt_file_path.exists() {
         return Err(format!(
             "{0} version {1} is not installed. Run 'terve install {0} {1}'",
             binary, version
         )
         .into());
     }
-    if read_link(&symlink_path).is_ok() {
-        remove_file(&symlink_path)?;
+    let hard_link_path = dot_dir.bin.join(&binary);
+    if hard_link_path.exists() {
+        remove_file(&hard_link_path)?;
     }
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::symlink;
-        symlink(&opt_file_path, &symlink_path)?;
-    }
-    #[cfg(windows)]
-    {
-        use std::os::windows::fs::symlink_file;
-        symlink_file(&opt_file_path, &symlink_path)?;
-    }
+    hard_link(&opt_file_path, &hard_link_path)?;
     Ok(format!("Selected {} {}", binary, version))
 }
 
@@ -151,15 +142,9 @@ pub fn remove_binary_version(
     version: String,
     dot_dir: DotDir,
 ) -> Result<String, Box<dyn Error>> {
-    let symlink_path = dot_dir.bin.join(&binary);
     let opt_file_path = dot_dir.opt.join(&binary).join(&version);
-    if Path::new(&opt_file_path).exists() {
+    if opt_file_path.exists() {
         remove_file(&opt_file_path)?;
-        let symlink_is_broken =
-            read_link(&symlink_path).is_ok() && !Path::new(&symlink_path).exists();
-        if symlink_is_broken {
-            remove_file(&symlink_path)?;
-        }
     }
     Ok(format!("Removed {} {}", binary, version))
 }
