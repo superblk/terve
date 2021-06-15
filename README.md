@@ -133,11 +133,11 @@ terve i tg "$tg_version" && terve s tg "$tg_version"
 
 You need [cargo](https://rustup.rs/) and [OpenSSL pre-requisites](https://docs.rs/openssl#automatic). To run all tests, run `cargo test`.
 
-To build the binary, run `cargo build --release`. Binary is then found in `target/release/terve`.
+To build the binary, run `cargo build --release`. Binary is then found in `target/release/`.
 
 Visual Studio Code with [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=matklad.rust-analyzer) provides a good IDE experience.
 
 ## TODOs
 
 - QA: Improve test coverage
-- CI: Release workflow (matrix: linux + darwin)
+- CI: Release workflow
