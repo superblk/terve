@@ -39,11 +39,11 @@ impl HttpClient {
         Ok(bytes)
     }
 
-    pub fn get_text(&self, url: &str, accept: &str) -> Result<String, reqwest::Error> {
+    pub fn get_text(&self, url: &str) -> Result<String, reqwest::Error> {
         let text = self
             .client
             .get(url)
-            .header("Accept", accept)
+            .header("Accept", "text/plain")
             .send()?
             .error_for_status()?
             .text()?;

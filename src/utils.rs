@@ -77,7 +77,7 @@ pub fn git_list_remote_tags(repo_url: &str) -> Result<Vec<String>, Box<dyn Error
         .list()?
         .iter()
         .map(|h| h.name().to_string())
-        .filter(|r| r.starts_with("refs/tags/"))
+        .filter(|r| r.starts_with("refs/tags/") && !r.ends_with("^{}"))
         .map(|s| s.trim_start_matches("refs/tags/").to_owned())
         .collect();
     remote.disconnect()?;

@@ -7,6 +7,8 @@ use std::{
     str::FromStr,
 };
 use std::{error::Error, process};
+use terraform::TF_GIT_REPOSITORY_URL;
+use terragrunt::TG_GIT_REPOSITORY_URL;
 
 mod http;
 mod shared;
@@ -52,10 +54,10 @@ fn run() -> Result<String, Box<dyn Error>> {
         match (action, binary, version) {
             (Action::List, binary, None) => shared::list_installed_versions(binary, dot_dir),
             (Action::List, Binary::Terraform, Some(v)) if v.is_remote() => {
-                terraform::list_available_versions()
+                shared::list_available_versions(TF_GIT_REPOSITORY_URL)
             }
             (Action::List, Binary::Terragrunt, Some(v)) if v.is_remote() => {
-                terragrunt::list_available_versions()
+                shared::list_available_versions(TG_GIT_REPOSITORY_URL)
             }
             (Action::Install, Binary::Terraform, Some(v)) if v.is_semver() => {
                 terraform::install_binary_version(v, dot_dir, os, arch)

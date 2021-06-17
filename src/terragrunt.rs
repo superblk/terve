@@ -7,19 +7,7 @@ use crate::{
 };
 use regex::Regex;
 use reqwest::StatusCode;
-use semver::{Prerelease, Version};
 use std::env::consts::EXE_SUFFIX;
-
-pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
-    let mut versions: Vec<Version> = utils::git_list_remote_tags(TG_GIT_REPOSITORY_URL)?
-        .iter()
-        .map(|t| t.trim_start_matches('v'))
-        .filter_map(|s| Version::parse(s).ok())
-        .filter(|v| v.pre == Prerelease::EMPTY)
-        .collect();
-    let result = utils::to_sorted_multiline_string(&mut versions);
-    Ok(result)
-}
 
 pub fn install_binary_version(
     version: String,
@@ -36,7 +24,7 @@ pub fn install_binary_version(
         let mut tmp_file = tempfile::tempfile()?;
         let http_client = HttpClient::new()?;
         http_client.download_file(&file_download_url, &tmp_file)?;
-        match http_client.get_text(&shasums_download_url, "text/plain") {
+        match http_client.get_text(&shasums_download_url) {
             Ok(shasums) => {
                 let sha256_regex = Regex::new(format!(r"([a-f0-9]+)\s+{}", file_name).as_str())?;
                 let expected_sha256 = utils::regex_capture_group(&sha256_regex, 1, &shasums)?;
@@ -61,7 +49,7 @@ pub fn install_binary_version(
     Ok(format!("Installed terragrunt {}", version))
 }
 
-const TG_GIT_REPOSITORY_URL: &str = "https://github.com/gruntwork-io/terragrunt";
+pub const TG_GIT_REPOSITORY_URL: &str = "https://github.com/gruntwork-io/terragrunt";
 
 const TG_RELEASES_DOWNLOAD_URL: &str =
     "https://github.com/gruntwork-io/terragrunt/releases/download";
