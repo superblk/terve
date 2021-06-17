@@ -6,7 +6,7 @@ use std::{
     str::FromStr,
 };
 
-use semver::Version;
+use semver::{Prerelease, Version};
 
 use crate::utils;
 
@@ -103,6 +103,17 @@ impl DotDir {
             opt,
         })
     }
+}
+
+pub fn list_available_versions(git_repo_url: &str) -> Result<String, Box<dyn Error>> {
+    let mut versions: Vec<Version> = utils::git_list_remote_tags(git_repo_url)?
+        .iter()
+        .map(|t| t.trim_start_matches('v'))
+        .filter_map(|s| Version::parse(s).ok())
+        .filter(|v| v.pre == Prerelease::EMPTY)
+        .collect();
+    let result = utils::to_sorted_multiline_string(&mut versions);
+    Ok(result)
 }
 
 pub fn list_installed_versions(binary: Binary, dot_dir: DotDir) -> Result<String, Box<dyn Error>> {

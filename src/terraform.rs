@@ -2,7 +2,6 @@ use std::{error::Error, fs::File, io::copy};
 
 use pgp::{types::KeyTrait, Deserializable, SignedPublicKey, StandaloneSignature};
 use regex::Regex;
-use semver::Version;
 use zip::ZipArchive;
 
 use crate::{
@@ -13,18 +12,6 @@ use crate::{
 
 use std::env::consts::EXE_SUFFIX;
 
-pub fn list_available_versions() -> Result<String, Box<dyn Error>> {
-    let http_client = HttpClient::new()?;
-    let releases_html = http_client.get_text(TF_RELEASES_URL, "text/html")?;
-    let semver_regex = Regex::new(r"[0-9]+\.[0-9]+\.[0-9]+")?;
-    let mut versions: Vec<Version> = semver_regex
-        .find_iter(&releases_html)
-        .filter_map(|m| Version::parse(m.as_str()).ok())
-        .collect();
-    let result = utils::to_sorted_multiline_string(&mut versions);
-    Ok(result)
-}
-
 pub fn install_binary_version(
     version: String,
     dot_dir: DotDir,
@@ -34,8 +21,8 @@ pub fn install_binary_version(
     let opt_file_path = dot_dir.opt.join(Binary::Terraform).join(&version);
     if !opt_file_path.exists() {
         let zip_download_url = format!(
-            "{0}{1}/terraform_{1}_{2}_{3}.zip",
-            TF_RELEASES_URL, version, os, arch
+            "{0}/{1}/terraform_{1}_{2}_{3}.zip",
+            TF_RELEASES_DOWNLOAD_URL, version, os, arch
         );
         let tmp_zip_file = tempfile::tempfile()?;
         let http_client = HttpClient::new()?;
@@ -64,16 +51,19 @@ fn verify_download_integrity(
     http_client: &HttpClient,
     zip_file: &File,
 ) -> Result<(), Box<dyn Error>> {
-    let shasums_download_url = format!("{0}{1}/terraform_{1}_SHA256SUMS", TF_RELEASES_URL, version);
-    let shasums = http_client.get_text(&shasums_download_url, "text/plain")?;
+    let shasums_download_url = format!(
+        "{0}/{1}/terraform_{1}_SHA256SUMS",
+        TF_RELEASES_DOWNLOAD_URL, version
+    );
+    let shasums = http_client.get_text(&shasums_download_url)?;
     let pgp_public_key_path = dot_dir.etc.join("terraform.asc");
     if pgp_public_key_path.is_file() && pgp_public_key_path.metadata()?.permissions().readonly() {
         let pgp_public_key_file = File::open(pgp_public_key_path)?;
         let (public_key, _) = SignedPublicKey::from_armor_single(pgp_public_key_file)?;
         let pgp_key_id = &hex::encode(public_key.fingerprint()).to_uppercase()[32..];
         let shasums_sig_download_url = format!(
-            "{0}{1}/terraform_{1}_SHA256SUMS.{2}.sig",
-            TF_RELEASES_URL, version, &pgp_key_id
+            "{0}/{1}/terraform_{1}_SHA256SUMS.{2}.sig",
+            TF_RELEASES_DOWNLOAD_URL, version, &pgp_key_id
         );
         let signature_bytes = http_client.get_bytes(&shasums_sig_download_url)?;
         let signature = StandaloneSignature::from_bytes(&signature_bytes[..])?;
@@ -88,4 +78,6 @@ fn verify_download_integrity(
     Ok(())
 }
 
-const TF_RELEASES_URL: &str = "https://releases.hashicorp.com/terraform/";
+pub const TF_GIT_REPOSITORY_URL: &str = "https://github.com/hashicorp/terraform";
+
+const TF_RELEASES_DOWNLOAD_URL: &str = "https://releases.hashicorp.com/terraform";
