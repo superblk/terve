@@ -1,5 +1,9 @@
 # Terve 👋
 
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/superblk/terve)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/superblk/terve/Build)
+![GitHub](https://img.shields.io/github/license/superblk/terve)
+
 Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terragrunt](https://github.com/gruntwork-io/terragrunt/releases) version manager.
 
 WARNING: this is a new project, and is very subject to change
