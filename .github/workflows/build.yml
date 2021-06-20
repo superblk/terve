@@ -32,7 +32,7 @@ jobs:
       - name: Run all tests
         run: cargo test
 
-      - name: Check code formatting
+      - name: Run fmt check
         run: cargo fmt --all -- --check
 
       - name: Run clippy lints
