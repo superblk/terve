@@ -2,13 +2,12 @@
 
 Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terragrunt](https://github.com/gruntwork-io/terragrunt/releases) version manager.
 
-
 ![Release](https://img.shields.io/github/v/release/superblk/terve)
 ![Build](https://img.shields.io/github/workflow/status/superblk/terve/Build)
 ![License](https://img.shields.io/github/license/superblk/terve)
 ![OS](https://img.shields.io/badge/os-Linux%20%7C%20MacOS%20%7C%20Windows-ff69b4)
 
-WARNING: this is a new project, and is very subject to change
+WARNING: this is a new project, and is subject to change
 
 ## Supported platforms
 
@@ -137,13 +136,8 @@ terve i tg "$tg_version" && terve s tg "$tg_version"
 
 ## Development
 
-You need [cargo](https://rustup.rs/) and [OpenSSL pre-requisites](https://docs.rs/openssl#automatic). To run all tests, run `cargo test`.
+You need [cargo](https://rustup.rs/). To run all tests, run `cargo test`.
 
 To build the binary, run `cargo build --release`. Binary is then found in `target/release/`.
 
 Visual Studio Code with [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=matklad.rust-analyzer) provides a good IDE experience.
-
-## TODOs
-
-- QA: Improve test coverage
-- CI: Release workflow
