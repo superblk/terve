@@ -27,7 +27,7 @@ jobs:
 
       - name: Install musl-tools
         if: matrix.os == 'ubuntu-18.04'
-        run: sudo apt install -y musl-tools
+        run: sudo apt-get install -y musl-tools
 
       - name: Setup rust toolchain
         uses: actions-rs/toolchain@v1
