@@ -14,23 +14,34 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-18.04, macos-10.15, windows-2016]
+        include:
+          - os: ubuntu-18.04
+            target: x86_64-unknown-linux-musl
+          - os: macos-10.15
+            target: x86_64-apple-darwin
+          - os: windows-2016
+            target: x86_64-pc-windows-msvc
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Setup Rust toolchain
+      - name: Install musl-tools
+        if: matrix.os == 'ubuntu-18.04'
+        run: sudo apt-get install -y musl-tools
+
+      - name: Setup rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           components: rustfmt, clippy
+          target: ${{ matrix.target }}
 
       - name: Run debug build
-        run: cargo build
+        run: cargo build --target ${{ matrix.target }}
 
       - name: Run all tests
-        run: cargo test
+        run: cargo test --target ${{ matrix.target }}
 
       - name: Run fmt check
         run: cargo fmt --all -- --check
