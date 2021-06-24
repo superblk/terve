@@ -1,0 +1,79 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-18.04
+            bin: terve_linux_amd64
+            target: x86_64-unknown-linux-musl
+            ref: linux-amd64
+          - os: macos-10.15
+            bin: terve_darwin_amd64
+            target: x86_64-apple-darwin
+            ref: darwin-amd64
+          - os: windows-2016
+            bin: terve_windows_amd64
+            target: x86_64-pc-windows-msvc
+            ref: windows-amd64
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install musl-tools
+        if: matrix.os == 'ubuntu-18.04'
+        run: sudo apt-get install -y musl-tools
+
+      - name: Setup rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: ${{ matrix.target }}
+
+      - name: Run release build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Strip binary
+        if: matrix.os != 'windows-2016'
+        run: strip target/${{ matrix.target }}/release/terve -o target/${{ matrix.bin }}
+ 
+      # See https://github.community/t/bug-jobs-output-should-return-a-list-for-a-matrix-job/128626
+      - id: sha256sum
+        name: Calculate SHA256 sum
+        run: |
+          echo "::set-output name=sha256-${{ matrix.ref }}::$(cd target && sha256sum ${{ matrix.bin }})"
+
+      - name: Attach binary to release
+        run: |
+          gh release upload $GITHUB_REF target/${{ matrix.bin }}
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    outputs:
+        sha256-linux-amd64: ${{ steps.sha256sum.outputs.sha256-linux-amd64 }}
+        sha256-darwin-amd64: ${{ steps.sha256sum.outputs.sha256-darwin-amd64 }}
+        sha256-windows-amd64: ${{ steps.sha256sum.outputs.sha256-windows-amd64 }}
+  
+  release:
+    needs: build
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Upload SHA256SUMS file
+        run: |
+          file="$GITHUB_WORKSPACE"/SHA256SUMS
+          echo "${{ needs.build.outputs.sha256-linux-amd64 }}" >> $file
+          echo "${{ needs.build.outputs.sha256-darwin-amd64 }}" >> $file
+          echo "${{ needs.build.outputs.sha256-windows-amd64 }}" >> $file
+          gh release upload $GITHUB_REF $file
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
