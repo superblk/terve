@@ -47,8 +47,8 @@ jobs:
         with:
           name: ${{ matrix.platform }}
           path: |
-            target/${{ matrix.target }}/terve
-            target/${{ matrix.target }}/terve.exe
+            target/${{ matrix.target }}/release/terve
+            target/${{ matrix.target }}/release/terve.exe
           if-no-files-found: error
           retention-days: 5
   
@@ -68,7 +68,7 @@ jobs:
           cd release-assets
           sha256sum * > SHA256SUMS
 
-      - name: Create release
+      - name: Create release with assets
         run: gh --repo superblk/terve release create --prerelease ${GITHUB_REF#refs/tags/} release-assets/*
         env: 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
