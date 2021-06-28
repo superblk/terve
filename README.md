@@ -3,7 +3,6 @@
 Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terragrunt](https://github.com/gruntwork-io/terragrunt/releases) version manager.
 
 ![Release](https://img.shields.io/github/v/release/superblk/terve)
-![Build](https://img.shields.io/github/workflow/status/superblk/terve/Build)
 ![License](https://img.shields.io/github/license/superblk/terve)
 ![OS](https://img.shields.io/badge/os-Linux%20%7C%20MacOS%20%7C%20Windows-ff69b4)
 
