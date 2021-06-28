@@ -45,6 +45,16 @@ jobs:
       - name: Run release build
         run: cargo build --release --target ${{ matrix.target }}
  
+      # TODO: Leverage cargo opts for stripping: https://github.com/rust-lang/rust/issues/72110
+
+      - name: Strip linux binary
+        if: matrix.os == 'ubuntu-18.04'
+        run: strip -s target/${{ matrix.target }}/release/terve
+
+      - name: Strip macos binary
+        if: matrix.os == 'macos-10.15'
+        run: strip -x target/${{ matrix.target }}/release/terve
+
       - name: Save release binary
         uses: actions/upload-artifact@v2
         with:
@@ -54,7 +64,7 @@ jobs:
             target/${{ matrix.target }}/release/terve.exe
           if-no-files-found: error
           retention-days: 5
-  
+
   release:
     needs: build
     runs-on: ubuntu-18.04
