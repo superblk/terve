@@ -65,7 +65,7 @@ Syntax: `terve l[ist] <binary> [spec]` where `spec` is `r[emote]`
 
 - `terve l tf` lists installed (local) terraform versions
 - `terve l tf r` lists available (remote) terraform versions
-- `terve l tf r | tac` lists lists available terraform versions, sorted oldest first
+- `terve l tf r | tac` lists available terraform versions, _sorted oldest first_
 - `terve l tg r | grep 0.29.` lists available terragrunt 0.29.x versions
 
 ### Install
