@@ -1,14 +1,16 @@
 # Terve 👋
 
-Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terragrunt](https://github.com/gruntwork-io/terragrunt/releases) version manager.
-
 ![Release](https://img.shields.io/github/v/release/superblk/terve)
 ![License](https://img.shields.io/github/license/superblk/terve)
 ![OS](https://img.shields.io/badge/os-Linux%20%7C%20MacOS%20%7C%20Windows-ff69b4)
 
-WARNING: this is a new project, and is subject to change
+Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terragrunt](https://github.com/gruntwork-io/terragrunt/releases) version manager.
+
+**WARNING**: this is a new project, and is very subject to change
 
 ## Supported platforms
+
+Pre-built binaries are provided for:
 
 - Linux (amd64)
 - MacOS (amd64)
@@ -16,16 +18,17 @@ WARNING: this is a new project, and is subject to change
 
 ## Setup
 
-1. [Build](https://github.com/superblk/terve#development), and install `terve` in `PATH`, e.g. in `/usr/local/bin`
-1. Add the directory `~/.terve/bin` to `PATH` (using e.g. `.bashrc`)
+1. [Download](https://github.com/superblk/terve/releases) terve for your platform, check `SHA256SUMS`, and install it in `PATH`, e.g. `/usr/local/bin/terve`
+    - On linux/macOS, be sure to make the binary executable: `chmod +x terve`
 1. Create the `~/.terve` directory tree by running `terve --bootstrap`
-1. Install Hashicorp's [PGP public key](https://www.hashicorp.com/security) in `~/.terve/etc/terraform.asc` (mode `0444`)
-    - This public key is used to verify terraform download PGP signatures
-    - If not installed (or bad file permissions), terve will log a warning for each terraform install
+1. Add the `~/.terve/bin` directory to `PATH` (using e.g. `.bashrc` or Windows' control panel)
+1. Copy Hashicorp's [PGP public key](https://www.hashicorp.com/security) in `~/.terve/etc/terraform.asc` (read-only, mode `0444` on linux/macOS)
+    - This public key is used to verify terraform binary download PGP signatures
+    - If not installed (or bad file permissions), terve will log a warning for terraform installs
 
 ## How it works
 
-Terve uses hard links to configure selected terraform/terragrunt binary versions.
+Terve uses **hard** links to configure selected terraform/terragrunt binary versions.
 
 All files are kept in directory `~/.terve` like so (example directory tree for Linux):
 
@@ -62,6 +65,7 @@ Syntax: `terve l[ist] <binary> [spec]` where `spec` is `r[emote]`
 
 - `terve l tf` lists installed (local) terraform versions
 - `terve l tf r` lists available (remote) terraform versions
+- `terve l tf r | tac` lists lists available terraform versions, sorted oldest first
 - `terve l tg r | grep 0.29.` lists available terragrunt 0.29.x versions
 
 ### Install
@@ -96,11 +100,13 @@ Syntax: `terve r[emove] <binary> <semver>`
 - `terve r tf 0.12.31` removes terraform version 0.12.31
 - `terve l tf | grep 0.11. | xargs -n1 terve r tf` removes all installed terraform 0.11.x versions
 
-## Shell extensions
+## Optional shell extensions
 
-### terve-use
+Install these scripts into `~/.terve/bin` to make use of them.
 
-Use tool versions defined in `.terraform-version` and `.terragrunt-version` (in current working directory or any parent directory)
+### terve-use (Linux and macOS)
+
+Use terraform and terragrunt versions defined in `.terraform-version` and `.terragrunt-version` (in current working directory or any parent directory)
 
 ```sh
 #!/bin/sh
@@ -135,8 +141,8 @@ terve i tg "$tg_version" && terve s tg "$tg_version"
 
 ## Development
 
-You need [cargo](https://rustup.rs/). To run all tests, run `cargo test`.
+You need [cargo](https://rustup.rs/) (Rust's build tool). To run all tests, run `cargo test`.
+
+Visual Studio Code with [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=matklad.rust-analyzer) provides a reasonable IDE experience.
 
 To build the binary, run `cargo build --release`. Binary is then found in `target/release/`.
-
-Visual Studio Code with [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=matklad.rust-analyzer) provides a good IDE experience.
