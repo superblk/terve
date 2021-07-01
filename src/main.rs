@@ -101,11 +101,12 @@ fn get_params(mut args: Arguments) -> Result<Params, Box<dyn Error>> {
     };
 
     let arch = match ARCH {
-        "x86_64" => "amd64".to_string(),
+        "x86_64" => "amd64",
+        "aarch64" => "arm64",
         arch => panic!("Unsupported architecture: {}", arch),
     };
 
-    Ok((action, binary, version, os, arch))
+    Ok((action, binary, version, os, arch.to_string()))
 }
 
 trait VersionQualifier {

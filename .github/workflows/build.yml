@@ -27,13 +27,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install musl-tools
-        if: matrix.os == 'ubuntu-18.04'
+      - name: Install amd64 musl tools
+        if: matrix.target == 'x86_64-unknown-linux-musl'
         run: sudo apt-get install -y musl-tools
 
-      - name: Install aarch64 cross-compile support
+      - name: Install aarch64 musl tools
         if: matrix.target == 'aarch64-unknown-linux-musl'
-        run: sudo apt-get install -y gcc-aarch64-linux-gnu
+        run: |
+          shasums_download_url="https://musl.cc/SHA512SUMS"
+          tgz_download_url="https://musl.cc/aarch64-linux-musl-cross.tgz"
+          tmp_dir="$(mktemp -d $RUNNER_TEMP/XXXXXXXXXX)"
+          curl -fsSL "$shasums_download_url" -o "$tmp_dir/SHA512SUMS"
+          curl -fsSL "$tgz_download_url" -o "$tmp_dir/aarch64-linux-musl-cross.tgz"
+          cd "$tmp_dir"
+          sha512sum -c SHA512SUMS 2>/dev/null | grep OK
+          tar xvzf aarch64-linux-musl-cross.tgz 
+          echo "$tmp_dir/aarch64-linux-musl-cross/bin" >> $GITHUB_PATH
 
       - name: Setup rust toolchain
         uses: actions-rs/toolchain@v1
@@ -47,6 +56,7 @@ jobs:
         run: cargo build --target ${{ matrix.target }}
 
       - name: Run all tests
+        if: matrix.target != 'aarch64-unknown-linux-musl'
         run: cargo test --target ${{ matrix.target }}
 
       - name: Run fmt check
