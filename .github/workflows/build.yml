@@ -17,47 +17,33 @@ jobs:
         include:
           - os: ubuntu-18.04
             target: x86_64-unknown-linux-musl
+            builder: cross
           - os: ubuntu-18.04
             target: aarch64-unknown-linux-musl
+            builder: cargo
           - os: macos-10.15
             target: x86_64-apple-darwin
+            builder: cargo
           - os: windows-2016
             target: x86_64-pc-windows-msvc
+            builder: cargo
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
-      - name: Install amd64 musl tools
-        if: matrix.target == 'x86_64-unknown-linux-musl'
-        run: sudo apt-get install -y musl-tools
-
-      - name: Install aarch64 musl tools
-        if: matrix.target == 'aarch64-unknown-linux-musl'
-        run: |
-          shasums_download_url="https://musl.cc/SHA512SUMS"
-          tgz_download_url="https://musl.cc/aarch64-linux-musl-cross.tgz"
-          tmp_dir="$(mktemp -d $RUNNER_TEMP/XXXXXXXXXX)"
-          curl -fsSL "$shasums_download_url" -o "$tmp_dir/SHA512SUMS"
-          curl -fsSL "$tgz_download_url" -o "$tmp_dir/aarch64-linux-musl-cross.tgz"
-          cd "$tmp_dir"
-          sha512sum -c SHA512SUMS 2>/dev/null | grep OK
-          tar xvzf aarch64-linux-musl-cross.tgz
-          echo "$tmp_dir/aarch64-linux-musl-cross/bin" >> $GITHUB_PATH
 
       - name: Setup rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
-          components: rustfmt, clippy
+          components: rustfmt, clippy, cross
           target: ${{ matrix.target }}
 
       - name: Run debug build
-        run: cargo build --target ${{ matrix.target }}
+        run: ${{ matrix.builder }} build --target ${{ matrix.target }}
 
       - name: Run all tests
-        if: matrix.target != 'aarch64-unknown-linux-musl'
-        run: cargo test --target ${{ matrix.target }}
+        run: ${{ matrix.builder }} test --target ${{ matrix.target }}
 
       - name: Run fmt check
         run: cargo fmt --all -- --check
