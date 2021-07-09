@@ -47,6 +47,7 @@ jobs:
         run: ${{ matrix.builder }} build --target ${{ matrix.target }}
 
       - name: Run all tests
+        if: matrix.target != 'aarch64-unknown-linux-musl'
         run: ${{ matrix.builder }} test --target ${{ matrix.target }}
 
       - name: Run fmt check
