@@ -36,8 +36,12 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-          components: rustfmt, clippy, cross
+          components: rustfmt, clippy
           target: ${{ matrix.target }}
+
+      - name: Install cross
+        if: matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'aarch64-unknown-linux-musl'
+        run: cargo install cross
 
       - name: Run debug build
         run: ${{ matrix.builder }} build --target ${{ matrix.target }}
