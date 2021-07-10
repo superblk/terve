@@ -10,7 +10,30 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  check:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Check for errors
+        run: cargo check
+
+      - name: Check code formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run clippy lints
+        run: cargo clippy -- -D warnings
+
   build:
+    needs: check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -45,7 +68,6 @@ jobs:
           profile: minimal
           toolchain: stable
           target: ${{ matrix.target }}
-          components: rustfmt, clippy
 
       - name: Install cross for linux musl builds
         if: endsWith(matrix.target, 'linux-musl')
@@ -63,9 +85,3 @@ jobs:
       - name: Run tests
         if: matrix.target != 'aarch64-apple-darwin'
         run: ${{ matrix.test-cmd }} --target ${{ matrix.target }}
-
-      - name: Run fmt check
-        run: cargo fmt --all -- --check
-
-      - name: Run clippy lints
-        run: cargo clippy -- -D warnings
