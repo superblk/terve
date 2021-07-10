@@ -22,7 +22,7 @@ jobs:
           - target: aarch64-unknown-linux-musl
             os: ubuntu-18.04
             build-cmd: cross build
-            test-cmd: cross test --bin
+            test-cmd: cross test --bin terve
           - target: x86_64-apple-darwin
             os: macos-10.15
             build-cmd: cargo build
@@ -30,7 +30,7 @@ jobs:
           - target: aarch64-apple-darwin
             os: macos-10.15
             build-cmd: cargo build
-            test-cmd: cargo test --bin
+            test-cmd: cargo test --bin terve
           - target: x86_64-pc-windows-msvc
             os: windows-2016
             build-cmd: cargo build
