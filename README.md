@@ -10,13 +10,13 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
 
 ## Supported platforms
 
-Pre-built binaries are provided for:
+Pre-built binaries are currently provided for:
 
 - Linux (amd64, arm64)
 - MacOS (amd64, arm64)
 - Windows (amd64)
 
-NOTE: arm64 builds are not _tested_ by CI (GitHub-hosted runners do not currently support arm64)
+WARNING: CI _integration_ tests are not run for arm64 builds (GitHub-hosted runners do not currently support arm64 architecture)
 
 ## Setup
 
