@@ -30,6 +30,9 @@ jobs:
           - os: windows-2016
             target: x86_64-pc-windows-msvc
             builder: cargo
+          - os: windows-2016
+            target: aarch64-pc-windows-msvc
+            builder: cargo
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
