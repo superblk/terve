@@ -16,7 +16,7 @@ Pre-built binaries are currently provided for:
 - MacOS (amd64, arm64)
 - Windows (amd64)
 
-WARNING: CI _integration_ tests are not run for arm64 builds (GitHub-hosted runners do not currently support arm64 architecture)
+WARNING: CI tests are not run for macOS arm64 builds (GitHub-hosted runners do not currently support arm64 architecture)
 
 ## Setup
 

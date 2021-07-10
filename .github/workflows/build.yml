@@ -30,7 +30,7 @@ jobs:
           - target: aarch64-apple-darwin
             os: macos-10.15
             build-cmd: cargo build
-            test-cmd: cargo test --bin terve
+            test-cmd: /bin/false --nope
           - target: x86_64-pc-windows-msvc
             os: windows-2016
             build-cmd: cargo build
@@ -44,8 +44,8 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-          components: rustfmt, clippy
           target: ${{ matrix.target }}
+          components: rustfmt, clippy
 
       - name: Install cross for linux musl builds
         if: endsWith(matrix.target, 'linux-musl')
@@ -61,6 +61,7 @@ jobs:
         run: ${{ matrix.build-cmd }} --target ${{ matrix.target }}
 
       - name: Run tests
+        if: matrix.target != 'aarch64-apple-darwin'
         run: ${{ matrix.test-cmd }} --target ${{ matrix.target }}
 
       - name: Run fmt check
