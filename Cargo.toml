@@ -6,7 +6,7 @@ edition = "2018"
 [dependencies]
 regex       = "~1.5"
 pico-args   = "~0.4"
-reqwest     = { version = "~0.11", default-features = false, features = ["native-tls-vendored", "blocking"] }
+reqwest     = { version = "~0.11", features = ["blocking"] }
 zip         = "~0.5"
 tempfile    = "~3.2"
 dirs        = "~3.0"
@@ -15,7 +15,7 @@ sha2        = "~0.9"
 hex         = "~0.4"
 pgp         = "~0.7"
 bytes       = "~1.0"
-git2        = { version = "~0.13", default-features = false, features = ["https", "vendored-openssl"] }
+git2        = { version = "~0.13", default-features = false, features = ["https"] }
 
 [dev-dependencies]
 assert_cmd  = "~1.0"
