@@ -16,7 +16,7 @@ Pre-built binaries are currently provided for:
 - MacOS (amd64, arm64)
 - Windows (amd64)
 
-⚠️ Automated tests are not run for macOS arm64 builds (GitHub-hosted runners do not currently support arm64 architecture)
+⚠️ Automated tests are not run for arm64 builds (GitHub-hosted runners do not currently support arm64)
 
 ## Setup
 
