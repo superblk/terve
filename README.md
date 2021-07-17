@@ -6,15 +6,17 @@
 
 Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terragrunt](https://github.com/gruntwork-io/terragrunt/releases) version manager.
 
-**WARNING**: this is a new project, and is very subject to change
+⚠️ this is a new project, and is very subject to change
 
 ## Supported platforms
 
-Pre-built binaries are provided for:
+Pre-built binaries are currently provided for:
 
-- Linux (amd64)
-- MacOS (amd64)
+- Linux (amd64, arm64)
+- MacOS (amd64, arm64)
 - Windows (amd64)
+
+⚠️ Automated tests are not run for arm64 builds (GitHub-hosted runners do not currently support arm64)
 
 ## Setup
 
