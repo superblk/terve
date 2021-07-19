@@ -13,6 +13,7 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
 Pre-built binaries are currently provided for:
 
 - Linux (amd64, arm64)
+  - OpenSSL 1.1 is required
 - MacOS (amd64)
 - Windows (amd64)
 
