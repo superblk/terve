@@ -11,10 +11,11 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
 ## Supported platforms
 
 - Linux (amd64, arm64)
-  - OpenSSL 1.1 is required
-  - NOTE: arm64 is only supported with terraform 0.11.15, 0.12.{30,31} and 0.13.5+ and terragrunt 0.28.12+
+  - NOTE: only terraform 0.11.15, 0.12.{30,31}, 0.13.5+ and terragrunt 0.28.12+ ship linux arm64 binaries
 - MacOS (amd64)
 - Windows (amd64)
+
+💡 OpenSSL 1.1 is required on Linux and macOS
 
 ⚠️ Automated tests are not run for arm64 builds (GitHub-hosted runners do not currently support arm64)
 
