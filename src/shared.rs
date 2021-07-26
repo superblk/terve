@@ -6,8 +6,9 @@ use std::{
     str::FromStr,
 };
 
+use same_file::is_same_file;
 use semver::{Prerelease, Version};
-
+use std::env::consts::EXE_SUFFIX;
 use crate::utils;
 
 pub enum Action {
@@ -15,6 +16,7 @@ pub enum Action {
     Install,
     Select,
     Remove,
+    Which,
 }
 
 pub enum Binary {
@@ -31,7 +33,11 @@ impl FromStr for Action {
             "i" | "install" => Ok(Action::Install),
             "s" | "select" => Ok(Action::Select),
             "r" | "remove" => Ok(Action::Remove),
-            _ => Err("Action must be one of: l[ist], i[nstall], s[elect] or r[emove]".to_string()),
+            "w" | "which" => Ok(Action::Which),
+            _ => Err(
+                "Action must be one of: l[ist], i[nstall], s[elect], r[emove] or w[hich]"
+                    .to_string(),
+            ),
         }
     }
 }
@@ -140,11 +146,11 @@ pub fn select_binary_version(
         )
         .into());
     }
-    let hard_link_path = dot_dir.bin.join(&binary);
-    if hard_link_path.exists() {
-        remove_file(&hard_link_path)?;
+    let bin_file_path = dot_dir.bin.join(&binary);
+    if bin_file_path.exists() {
+        remove_file(&bin_file_path)?;
     }
-    hard_link(&opt_file_path, &hard_link_path)?;
+    hard_link(&opt_file_path, &bin_file_path)?;
     Ok(format!("Selected {} {}", binary, version))
 }
 
@@ -155,7 +161,47 @@ pub fn remove_binary_version(
 ) -> Result<String, Box<dyn Error>> {
     let opt_file_path = dot_dir.opt.join(&binary).join(&version);
     if opt_file_path.exists() {
+        let bin_file_path = dot_dir.bin.join(&binary);
+        if is_same_file(&opt_file_path, &bin_file_path)? {
+            return Err(format!(
+                "{0} version {1} is currently selected. Use 'terve select {0} <version>' to select another version first",
+                &binary, version
+            )
+            .into());
+        }
         remove_file(&opt_file_path)?;
     }
     Ok(format!("Removed {} {}", binary, version))
+}
+
+pub fn get_selected_version(binary: Binary, dot_dir: DotDir) -> Result<String, Box<dyn Error>> {
+    let bin_file_path = dot_dir.bin.join(&binary);
+    let result = if bin_file_path.exists() {
+        let opt_dir_path = dot_dir.opt.join(&binary);
+        find_binary_version(bin_file_path, opt_dir_path)?
+    } else {
+        "".to_string()
+    };
+    Ok(result)
+}
+
+fn find_binary_version(
+    bin_file_path: PathBuf,
+    opt_dir_path: PathBuf,
+) -> Result<String, Box<dyn Error>> {
+    let expected_file_len = bin_file_path.metadata()?.len();
+    let candidates: Vec<PathBuf> = read_dir(&opt_dir_path)?
+        .filter_map(|r| Some(r.ok()?.path()))
+        .filter(|p| p.metadata().is_ok())
+        .filter(|p| p.metadata().unwrap().len() == expected_file_len)
+        .collect();
+    for opt_file_path in candidates {
+        if is_same_file(&bin_file_path, &opt_file_path)? {
+            if let Some(f) = &opt_file_path.file_name() {
+                let result = f.to_string_lossy().to_string().strip_suffix(EXE_SUFFIX);
+                return Ok(result);
+            }
+        }
+    }
+    Ok("".to_string())
 }

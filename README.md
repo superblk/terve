@@ -103,6 +103,17 @@ Syntax: `terve r[emove] <binary> <semver>`
 - `terve r tf 0.12.31` removes terraform version 0.12.31
 - `terve l tf | grep 0.11. | xargs -n1 terve r tf` removes all installed terraform 0.11.x versions
 
+### Which
+
+Tells which version is selected.
+
+Syntax: `terve w[hich] <binary>`
+
+```shell
+$ terve w tf
+0.15.5
+```
+
 ## Optional shell extensions
 
 Install these scripts into `~/.terve/bin` to make use of them.

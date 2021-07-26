@@ -71,6 +71,7 @@ fn run() -> Result<String, Box<dyn Error>> {
             (Action::Remove, binary, Some(v)) if v.is_semver() => {
                 shared::remove_binary_version(binary, v, dot_dir)
             }
+            (Action::Which, binary, None) => shared::get_selected_version(binary, dot_dir),
             _ => Err(INVALID_ARGS_MSG.into()),
         }
     } else {
@@ -136,9 +137,10 @@ USAGE:
 
 ACTION:
   l, list               Lists versions
-  i, install            Installs a specific version
-  s, select             Selects an installed version
-  r, remove             Removes an installed version
+  i, install            Installs given version
+  s, select             Selects installed version
+  r, remove             Removes installed version
+  w, which              Prints selected version
 
 BINARY:
   tf, terraform         Terraform (https://www.terraform.io/)
@@ -159,6 +161,7 @@ EXAMPLES:
   terve i tf 0.15.4     Installs terraform 0.15.4
   terve s tf 0.15.4     Selects terraform 0.15.4
   terve r tf 0.15.4     Removes terraform 0.15.4
+  terve w tf            Prints selected terraform version
 ";
 
 const INVALID_ARGS_MSG: &str = "Invalid arguments. Run 'terve --help' for usage";
