@@ -1,4 +1,8 @@
-use std::{error::Error, fs::File, io::copy};
+use std::{
+    error::Error,
+    fs::File,
+    io::{copy, Seek, SeekFrom},
+};
 
 use crate::{
     http::HttpClient,
@@ -37,6 +41,7 @@ pub fn install_binary_version(
                 return Err(other.into());
             }
         }
+        tmp_file.seek(SeekFrom::Start(0))?;
         let mut opt_file = File::create(&opt_file_path)?;
         copy(&mut tmp_file, &mut opt_file)?;
         #[cfg(unix)]

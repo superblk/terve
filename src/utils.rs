@@ -22,7 +22,6 @@ pub fn check_sha256_sum(mut file: &File, expected_sha256: &str) -> Result<(), Bo
         )
         .into());
     }
-    file.seek(SeekFrom::Start(0))?;
     Ok(())
 }
 
