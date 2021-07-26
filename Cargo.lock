@@ -1667,7 +1667,7 @@ dependencies = [
 
 [[package]]
 name = "terve"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "assert_cmd",
  "bytes",

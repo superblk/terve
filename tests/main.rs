@@ -14,6 +14,7 @@ fn test_workflows() {
     };
     test_terraform_all(&home_dir);
     test_terragrunt_all(&home_dir);
+    test_install_old_terragrunt_with_no_shasums(&home_dir);
 }
 
 fn test_terraform_all(home_dir: &PathBuf) {
@@ -216,6 +217,42 @@ fn test_terragrunt_all(home_dir: &PathBuf) {
         .success()
         .code(0)
         .stdout(predicate::str::is_empty());
+}
+
+// See https://github.com/superblk/terve/issues/21
+fn test_install_old_terragrunt_with_no_shasums(home_dir: &PathBuf) {
+    terve()
+        .arg("i")
+        .arg("tg")
+        .arg("0.18.0")
+        .assert()
+        .success()
+        .code(0)
+        .stderr(predicate::str::contains("WARNING: Skipping SHA256 file integrity check"))
+        .stdout(predicate::str::contains("Installed terragrunt 0.18.0"));
+
+    let opt_file_path = if cfg!(unix) {
+        home_dir
+            .join(".terve")
+            .join("opt")
+            .join("terragrunt")
+            .join("0.18.0")
+    } else {
+        home_dir
+            .join(".terve")
+            .join("opt")
+            .join("terragrunt.exe")
+            .join("0.18.0")
+    };
+
+    assert!(opt_file_path.metadata().unwrap().len() > 0);
+
+    Command::new(opt_file_path)
+        .arg("--version")
+        .assert()
+        .success()
+        .code(0)
+        .stdout(predicate::str::contains("0.18.0"));
 }
 
 fn terve() -> Command {
