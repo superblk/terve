@@ -228,7 +228,9 @@ fn test_install_old_terragrunt_with_no_shasums(home_dir: &PathBuf) {
         .assert()
         .success()
         .code(0)
-        .stderr(predicate::str::contains("WARNING: Skipping SHA256 file integrity check"))
+        .stderr(predicate::str::contains(
+            "WARNING: Skipping SHA256 file integrity check",
+        ))
         .stdout(predicate::str::contains("Installed terragrunt 0.18.0"));
 
     let opt_file_path = if cfg!(unix) {
