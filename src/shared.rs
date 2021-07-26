@@ -198,7 +198,7 @@ fn find_binary_version(
     for opt_file_path in candidates {
         if is_same_file(&bin_file_path, &opt_file_path)? {
             if let Some(f) = &opt_file_path.file_name() {
-                let result = f.to_string_lossy().to_string().strip_suffix(EXE_SUFFIX);
+                let result = f.to_string_lossy().to_string().trim_end(EXE_SUFFIX);
                 return Ok(result);
             }
         }
