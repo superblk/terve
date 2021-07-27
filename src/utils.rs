@@ -83,19 +83,26 @@ pub fn git_list_remote_tags(repo_url: &str) -> Result<Vec<String>, Box<dyn Error
     Ok(result)
 }
 
+// We do not use vanilla println macros because:
+// https://github.com/rust-lang/rust/issues/46016
+// https://stackoverflow.com/a/37558917
+
 pub fn println(msg: &str) {
-    let mut stdout = stdout();
-    let _ = write!(&mut stdout, "{}{}", msg, NEWLINE);
+    let stdout = stdout();
+    let mut lock = stdout.lock();
+    let _ = write!(&mut lock, "{}{}", msg, NEWLINE);
 }
 
 pub fn eprintln(e: Box<dyn Error>) {
-    let mut stderr = stderr();
-    let _ = write!(&mut stderr, "ERROR: {}{}", e, NEWLINE);
+    let stderr = stderr();
+    let mut lock = stderr.lock();
+    let _ = write!(&mut lock, "ERROR: {}{}", e, NEWLINE);
 }
 
 pub fn wprintln(msg: &str) {
-    let mut stderr = stderr();
-    let _ = write!(&mut stderr, "WARNING: {}{}", msg, NEWLINE);
+    let stderr = stderr();
+    let mut lock = stderr.lock();
+    let _ = write!(&mut lock, "WARNING: {}{}", msg, NEWLINE);
 }
 
 #[cfg(unix)]
