@@ -21,8 +21,13 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
 
 ## Setup
 
-1. [Download](https://github.com/superblk/terve/releases) terve for your platform, check `SHA256SUMS`, and install it in `PATH`, e.g. `/usr/local/bin/terve`
-    - On linux/macOS, be sure to make the binary executable: `chmod +x terve`
+1. [Download](https://github.com/superblk/terve/releases) terve for your platform, check `SHA256SUMS`, and install terve in `PATH`, e.g. `/usr/local/bin/terve`
+    - On Linux/macOS, file integrity can be checked like so
+        
+           $ sha256sum -c --ignore-missing 2>/dev/null SHA256SUMS
+           terve_linux_amd64: OK
+    
+    - On Linux/macOS, be sure to make the binary executable: `chmod +x terve`
 1. Create the `~/.terve` directory tree by running `terve --bootstrap`
 1. Add the `~/.terve/bin` directory to `PATH` (using e.g. `.bashrc` or Windows' control panel)
 1. Copy Hashicorp's [PGP public key](https://www.hashicorp.com/security) in `~/.terve/etc/terraform.asc` (read-only, mode `0444` on linux/macOS)
