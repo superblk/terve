@@ -6,7 +6,7 @@ use sha2::{Digest, Sha256};
 use std::{
     error::Error,
     fs::File,
-    io::{copy, Seek, SeekFrom},
+    io::{copy, stderr, stdout, Seek, SeekFrom, Write},
 };
 
 pub fn check_sha256_sum(mut file: &File, expected_sha256: &str) -> Result<(), Box<dyn Error>> {
@@ -83,11 +83,26 @@ pub fn git_list_remote_tags(repo_url: &str) -> Result<Vec<String>, Box<dyn Error
     Ok(result)
 }
 
+pub fn println(msg: &str) {
+    let mut stdout = stdout();
+    let _ = write!(&mut stdout, "{}{}", msg, NEWLINE);
+}
+
+pub fn eprintln(e: Box<dyn Error>) {
+    let mut stderr = stderr();
+    let _ = write!(&mut stderr, "ERROR: {}{}", e, NEWLINE);
+}
+
+pub fn wprintln(msg: &str) {
+    let mut stderr = stderr();
+    let _ = write!(&mut stderr, "WARNING: {}{}", msg, NEWLINE);
+}
+
 #[cfg(unix)]
-pub const NEWLINE: &str = "\n";
+const NEWLINE: &str = "\n";
 
 #[cfg(windows)]
-pub const NEWLINE: &str = "\r\n";
+const NEWLINE: &str = "\r\n";
 
 #[cfg(test)]
 mod tests {
