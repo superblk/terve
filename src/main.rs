@@ -9,6 +9,7 @@ use std::{
 use std::{error::Error, process};
 use terraform::TF_GIT_REPOSITORY_URL;
 use terragrunt::TG_GIT_REPOSITORY_URL;
+use utils::{eprintln, println};
 
 mod http;
 mod shared;
@@ -20,12 +21,12 @@ fn main() {
     process::exit(match run() {
         Ok(s) => {
             if !s.is_empty() {
-                print!("{}{}", s, utils::NEWLINE);
+                println(&s);
             }
             0
         }
         Err(e) => {
-            eprint!("ERROR: {}{}", e, utils::NEWLINE);
+            eprintln(e);
             1
         }
     });

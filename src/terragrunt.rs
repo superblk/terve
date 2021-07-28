@@ -7,7 +7,7 @@ use std::{
 use crate::{
     http::HttpClient,
     shared::{Binary, DotDir},
-    utils,
+    utils::{check_sha256_sum, regex_capture_group, wprintln},
 };
 use regex::Regex;
 use reqwest::StatusCode;
@@ -31,11 +31,11 @@ pub fn install_binary_version(
         match http_client.get_text(&shasums_download_url) {
             Ok(shasums) => {
                 let sha256_regex = Regex::new(format!(r"([a-f0-9]+)\s+{}", file_name).as_str())?;
-                let expected_sha256 = utils::regex_capture_group(&sha256_regex, 1, &shasums)?;
-                utils::check_sha256_sum(&tmp_file, &expected_sha256)?;
+                let expected_sha256 = regex_capture_group(&sha256_regex, 1, &shasums)?;
+                check_sha256_sum(&tmp_file, &expected_sha256)?;
             }
             Err(e) if e.status() == Some(StatusCode::NOT_FOUND) => {
-                eprint!("WARNING: Skipping SHA256 file integrity check. See https://github.com/superblk/terve#install{}", utils::NEWLINE);
+                wprintln("Skipping SHA256 file integrity check. See https://github.com/superblk/terve#install");
             }
             Err(other) => {
                 return Err(other.into());

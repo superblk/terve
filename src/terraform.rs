@@ -7,7 +7,7 @@ use zip::ZipArchive;
 use crate::{
     http::HttpClient,
     shared::{Binary, DotDir},
-    utils,
+    utils::{check_sha256_sum, regex_capture_group, verify_detached_pgp_signature, wprintln},
 };
 
 use std::env::consts::EXE_SUFFIX;
@@ -67,14 +67,16 @@ fn verify_download_integrity(
         );
         let signature_bytes = http_client.get_bytes(&shasums_sig_download_url)?;
         let signature = StandaloneSignature::from_bytes(&signature_bytes[..])?;
-        utils::verify_detached_pgp_signature(&shasums.as_bytes(), &signature, &public_key)?;
+        verify_detached_pgp_signature(&shasums.as_bytes(), &signature, &public_key)?;
     } else {
-        eprint!("WARNING: Skipping PGP signature verification. See https://github.com/superblk/terve#setup{}", utils::NEWLINE);
+        wprintln(
+            "Skipping PGP signature verification. See https://github.com/superblk/terve#setup",
+        );
     }
     let sha256_regex =
         Regex::new(format!(r"([a-f0-9]+)\s+terraform_{}_{}_{}.zip", version, os, arch).as_str())?;
-    let expected_sha256 = utils::regex_capture_group(&sha256_regex, 1, &shasums)?;
-    utils::check_sha256_sum(zip_file, &expected_sha256)?;
+    let expected_sha256 = regex_capture_group(&sha256_regex, 1, &shasums)?;
+    check_sha256_sum(zip_file, &expected_sha256)?;
     Ok(())
 }
 
