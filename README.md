@@ -21,7 +21,7 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
 
 ## Setup
 
-1. [Download](https://github.com/superblk/terve/releases) terve for your platform, check `SHA256SUMS`, and install in `PATH`, e.g. `/usr/local/bin/terve`
+1. [Download](https://github.com/superblk/terve/releases/latest) terve for your platform, check `SHA256SUMS`, and install in `PATH`, e.g. `/usr/local/bin/terve`
     - On Linux/macOS, file integrity can be checked like so
         
            $ sha256sum -c --ignore-missing 2>/dev/null SHA256SUMS
