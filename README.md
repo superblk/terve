@@ -101,7 +101,7 @@ Syntax: `terve s[elect] <binary> <semver>`
 
 ### Remove
 
-Removes a specific version.
+Removes a specific version. If that version is currently selected, it will be unset.
 
 Syntax: `terve r[emove] <binary> <semver>`
 

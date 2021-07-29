@@ -6,10 +6,9 @@ use std::{
     str::FromStr,
 };
 
+use crate::utils::{self, wprintln};
 use same_file::is_same_file;
 use semver::{Prerelease, Version};
-use std::env::consts::EXE_SUFFIX;
-use crate::utils;
 
 pub enum Action {
     List,
@@ -141,7 +140,7 @@ pub fn select_binary_version(
     let opt_file_path = dot_dir.opt.join(&binary).join(&version);
     if !opt_file_path.exists() {
         return Err(format!(
-            "{0} version {1} is not installed. Run 'terve install {0} {1}'",
+            "{0} version {1} is not installed",
             binary, version
         )
         .into());
@@ -162,34 +161,36 @@ pub fn remove_binary_version(
     let opt_file_path = dot_dir.opt.join(&binary).join(&version);
     if opt_file_path.exists() {
         let bin_file_path = dot_dir.bin.join(&binary);
+        // TODO: compare size too
         if is_same_file(&opt_file_path, &bin_file_path)? {
-            return Err(format!(
-                "{0} version {1} is currently selected. Use 'terve select {0} <version>' to select another version first",
-                &binary, version
-            )
-            .into());
+            // TODO: decide on warning msg
+            wprintln("Cleared selection");
+            remove_file(bin_file_path)?;
         }
         remove_file(&opt_file_path)?;
     }
     Ok(format!("Removed {} {}", binary, version))
 }
 
+// We use hard links, so we need to compare the executable ~/.terve/bin/<binary>
+// to files ~/.terve/opt/<binary>/<version> (version is encoded in opt file name)
 pub fn get_selected_version(binary: Binary, dot_dir: DotDir) -> Result<String, Box<dyn Error>> {
     let bin_file_path = dot_dir.bin.join(&binary);
     let result = if bin_file_path.exists() {
         let opt_dir_path = dot_dir.opt.join(&binary);
-        find_binary_version(bin_file_path, opt_dir_path)?
+        find_selected_binary_version(bin_file_path, opt_dir_path)?
     } else {
         "".to_string()
     };
     Ok(result)
 }
 
-fn find_binary_version(
+fn find_selected_binary_version(
     bin_file_path: PathBuf,
     opt_dir_path: PathBuf,
 ) -> Result<String, Box<dyn Error>> {
     let expected_file_len = bin_file_path.metadata()?.len();
+    // Reduce the search space by comparing file size first (also because of: https://github.com/BurntSushi/same-file/issues/52)
     let candidates: Vec<PathBuf> = read_dir(&opt_dir_path)?
         .filter_map(|r| Some(r.ok()?.path()))
         .filter(|p| p.metadata().is_ok())
@@ -198,8 +199,7 @@ fn find_binary_version(
     for opt_file_path in candidates {
         if is_same_file(&bin_file_path, &opt_file_path)? {
             if let Some(f) = &opt_file_path.file_name() {
-                let result = f.to_string_lossy().to_string().trim_end(EXE_SUFFIX);
-                return Ok(result);
+                return Ok(f.to_string_lossy().to_string());
             }
         }
     }
