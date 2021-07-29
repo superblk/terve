@@ -11,7 +11,7 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
 ## Supported platforms
 
 - Linux (amd64, arm64)
-  - NOTE: only terraform 0.11.15, 0.12.{30,31}, 0.13.5+ and terragrunt 0.28.12+ ship linux arm64 binaries
+  - NOTE: only terraform `0.11.15`, `0.12.{30,31}`, `0.13.5+` and terragrunt `0.28.12+` ship linux arm64 binaries
 - MacOS (amd64)
 - Windows (amd64)
 
@@ -21,11 +21,16 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
 
 ## Setup
 
-1. [Download](https://github.com/superblk/terve/releases) terve for your platform, check `SHA256SUMS`, and install it in `PATH`, e.g. `/usr/local/bin/terve`
-    - On linux/macOS, be sure to make the binary executable: `chmod +x terve`
+1. [Download](https://github.com/superblk/terve/releases/latest) terve for your platform, check `SHA256SUMS`, and install in `PATH`, e.g. `/usr/local/bin/terve`
+    - On Linux/macOS, file integrity can be checked like so
+        
+           $ sha256sum -c --ignore-missing 2>/dev/null SHA256SUMS
+           terve_linux_amd64: OK
+    
+    - On Linux/macOS, be sure to make the binary executable: `chmod +x terve`
 1. Create the `~/.terve` directory tree by running `terve --bootstrap`
 1. Add the `~/.terve/bin` directory to `PATH` (using e.g. `.bashrc` or Windows' control panel)
-1. Copy Hashicorp's [PGP public key](https://www.hashicorp.com/security) in `~/.terve/etc/terraform.asc` (read-only, mode `0444` on linux/macOS)
+1. Copy Hashicorp's [PGP public key](https://www.hashicorp.com/security) in `~/.terve/etc/terraform.asc` (read-only, mode `0444` on Linux/macOS)
     - This public key is used to verify terraform binary download PGP signatures
     - If not installed (or bad file permissions), terve will log a warning for terraform installs
 
@@ -157,6 +162,6 @@ terve i tg "$tg_version" && terve s tg "$tg_version"
 
 You need [cargo](https://rustup.rs/) (Rust's build tool). To run all tests, run `cargo test`.
 
-Visual Studio Code with [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=matklad.rust-analyzer) provides a reasonable IDE experience.
+Visual Studio Code with [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=matklad.rust-analyzer) provides a good IDE experience.
 
-To build the binary, run `cargo build --release`. Binary is then found in `target/release/`.
+To build a release binary, run `cargo build --release`. Binary is then found in `target/release/`.
