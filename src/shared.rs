@@ -1,13 +1,6 @@
-use std::{
-    error::Error,
-    fmt::Display,
-    fs::{create_dir_all, hard_link, read_dir, remove_file},
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::{error::Error, fmt::Display, fs::{create_dir_all, hard_link, read_dir, remove_file}, path::{Path, PathBuf}, str::FromStr};
 
-use crate::utils::{self, wprintln};
-use same_file::is_same_file;
+use crate::utils::{self, is_same_file};
 use semver::{Prerelease, Version};
 
 pub enum Action {
@@ -147,9 +140,13 @@ pub fn select_binary_version(
     }
     let bin_file_path = dot_dir.bin.join(&binary);
     if bin_file_path.exists() {
-        remove_file(&bin_file_path)?;
+        if !is_same_file(&bin_file_path, &opt_file_path)? {
+            remove_file(&bin_file_path)?;
+            hard_link(&opt_file_path, &bin_file_path)?;
+        }
+    } else {
+        hard_link(&opt_file_path, &bin_file_path)?;
     }
-    hard_link(&opt_file_path, &bin_file_path)?;
     Ok(format!("Selected {} {}", binary, version))
 }
 
@@ -161,10 +158,7 @@ pub fn remove_binary_version(
     let opt_file_path = dot_dir.opt.join(&binary).join(&version);
     if opt_file_path.exists() {
         let bin_file_path = dot_dir.bin.join(&binary);
-        // TODO: compare size too
-        if is_same_file(&opt_file_path, &bin_file_path)? {
-            // TODO: decide on warning msg
-            wprintln("Cleared selection");
+        if bin_file_path.exists() && is_same_file(&opt_file_path, &bin_file_path)? {
             remove_file(bin_file_path)?;
         }
         remove_file(&opt_file_path)?;
@@ -173,7 +167,7 @@ pub fn remove_binary_version(
 }
 
 // We use hard links, so we need to compare the executable ~/.terve/bin/<binary>
-// to files ~/.terve/opt/<binary>/<version> (version is encoded in opt file name)
+// to all ~/.terve/opt/<binary>/<version> files (version is encoded in file name)
 pub fn get_selected_version(binary: Binary, dot_dir: DotDir) -> Result<String, Box<dyn Error>> {
     let bin_file_path = dot_dir.bin.join(&binary);
     let result = if bin_file_path.exists() {
@@ -189,18 +183,12 @@ fn find_selected_binary_version(
     bin_file_path: PathBuf,
     opt_dir_path: PathBuf,
 ) -> Result<String, Box<dyn Error>> {
-    let expected_file_len = bin_file_path.metadata()?.len();
-    // Reduce the search space by comparing file size first (also because of: https://github.com/BurntSushi/same-file/issues/52)
-    let candidates: Vec<PathBuf> = read_dir(&opt_dir_path)?
+    let path: Option<PathBuf> = read_dir(&opt_dir_path)?
         .filter_map(|r| Some(r.ok()?.path()))
-        .filter(|p| p.metadata().is_ok())
-        .filter(|p| p.metadata().unwrap().len() == expected_file_len)
-        .collect();
-    for opt_file_path in candidates {
-        if is_same_file(&bin_file_path, &opt_file_path)? {
-            if let Some(f) = &opt_file_path.file_name() {
-                return Ok(f.to_string_lossy().to_string());
-            }
+        .find(|p|is_same_file(&bin_file_path, p).unwrap_or(false));
+    if let Some(p) = path {
+        if let Some(s) = p.file_name() {
+            return Ok(s.to_string_lossy().to_string());
         }
     }
     Ok("".to_string())

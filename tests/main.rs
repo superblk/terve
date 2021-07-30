@@ -54,7 +54,7 @@ fn test_terraform_all(home_dir: &PathBuf) {
         .assert()
         .failure()
         .code(1)
-        .stderr(predicate::str::contains("ERROR: terraform version 0.14.10 is not installed. Run 'terve install terraform 0.14.10'"));
+        .stderr(predicate::str::contains("ERROR: terraform version 0.14.10 is not installed"));
 
     // Assert idempotency by running the command twice
     for _ in 1..=2 {
@@ -155,7 +155,7 @@ fn test_terragrunt_all(home_dir: &PathBuf) {
         .assert()
         .failure()
         .code(1)
-        .stderr(predicate::str::contains("ERROR: terragrunt version 0.28.2 is not installed. Run 'terve install terragrunt 0.28.2'"));
+        .stderr(predicate::str::contains("ERROR: terragrunt version 0.28.2 is not installed"));
 
     // Assert idempotency by running the command twice
     for _ in 1..=2 {
