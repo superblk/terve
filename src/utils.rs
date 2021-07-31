@@ -3,7 +3,12 @@ use pgp::{types::KeyTrait, SignedPublicKey, StandaloneSignature};
 use regex::Regex;
 use semver::Version;
 use sha2::{Digest, Sha256};
-use std::{error::Error, fs::File, io::{copy, stderr, stdout, Seek, SeekFrom, Write}, path::Path};
+use std::{
+    error::Error,
+    fs::File,
+    io::{copy, stderr, stdout, Seek, SeekFrom, Write},
+    path::Path,
+};
 
 pub fn check_sha256_sum(mut file: &File, expected_sha256: &str) -> Result<(), Box<dyn Error>> {
     file.seek(SeekFrom::Start(0))?;
@@ -204,11 +209,19 @@ mod tests {
 
     #[test]
     fn test_is_same_file_equal() {
-        assert!(is_same_file(Path::new("tests/special.txt"), Path::new("tests/special.txt")).unwrap());
+        assert!(is_same_file(
+            Path::new("tests/special.txt"),
+            Path::new("tests/special.txt")
+        )
+        .unwrap());
     }
 
     #[test]
     fn test_is_same_file_not_equal() {
-        assert!(!is_same_file(Path::new("tests/special.txt"), Path::new("tests/hashicorp-72D7468F.asc")).unwrap());
+        assert!(!is_same_file(
+            Path::new("tests/special.txt"),
+            Path::new("tests/hashicorp-72D7468F.asc")
+        )
+        .unwrap());
     }
 }

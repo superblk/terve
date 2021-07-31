@@ -1,4 +1,10 @@
-use std::{error::Error, fmt::Display, fs::{create_dir_all, hard_link, read_dir, remove_file}, path::{Path, PathBuf}, str::FromStr};
+use std::{
+    error::Error,
+    fmt::Display,
+    fs::{create_dir_all, hard_link, read_dir, remove_file},
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use crate::utils::{self, is_same_file};
 use semver::{Prerelease, Version};
@@ -132,11 +138,7 @@ pub fn select_binary_version(
 ) -> Result<String, Box<dyn Error>> {
     let opt_file_path = dot_dir.opt.join(&binary).join(&version);
     if !opt_file_path.exists() {
-        return Err(format!(
-            "{0} version {1} is not installed",
-            binary, version
-        )
-        .into());
+        return Err(format!("{0} version {1} is not installed", binary, version).into());
     }
     let bin_file_path = dot_dir.bin.join(&binary);
     if bin_file_path.exists() {
@@ -185,7 +187,7 @@ fn find_selected_binary_version(
 ) -> Result<String, Box<dyn Error>> {
     let path: Option<PathBuf> = read_dir(&opt_dir_path)?
         .filter_map(|r| Some(r.ok()?.path()))
-        .find(|p|is_same_file(&bin_file_path, p).unwrap_or(false));
+        .find(|p| is_same_file(&bin_file_path, p).unwrap_or(false));
     if let Some(p) = path {
         if let Some(s) = p.file_name() {
             return Ok(s.to_string_lossy().to_string());
