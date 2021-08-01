@@ -67,7 +67,7 @@ fn verify_download_integrity(
         );
         let signature_bytes = http_client.get_bytes(&shasums_sig_download_url)?;
         let signature = StandaloneSignature::from_bytes(&signature_bytes[..])?;
-        verify_detached_pgp_signature(&shasums.as_bytes(), &signature, &public_key)?;
+        verify_detached_pgp_signature(shasums.as_bytes(), &signature, &public_key)?;
     } else {
         wprintln(
             "Skipping PGP signature verification. See https://github.com/superblk/terve#setup",
