@@ -139,6 +139,15 @@ fn test_terraform_workflow() {
             .stdout(contains("Removed terraform 0.14.11"));
     }
 
+    // Assert no version is now selected
+    terve(&home_dir)
+        .arg("w")
+        .arg("tf")
+        .assert()
+        .success()
+        .code(0)
+        .stdout(is_empty());
+
     // Remove the other version
     terve(&home_dir)
         .arg("r")
@@ -302,6 +311,15 @@ fn test_terragrunt_workflow() {
             .code(0)
             .stdout(contains("Removed terragrunt 0.29.2"));
     }
+
+    // Assert no version is now selected
+    terve(&home_dir)
+        .arg("w")
+        .arg("tg")
+        .assert()
+        .success()
+        .code(0)
+        .stdout(is_empty());
 
     // Remove the other version
     terve(&home_dir)
