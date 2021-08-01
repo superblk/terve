@@ -72,6 +72,7 @@ fn run() -> Result<String, Box<dyn Error>> {
             (Action::Remove, binary, Some(v)) if v.is_semver() => {
                 shared::remove_binary_version(binary, v, dot_dir)
             }
+            (Action::Which, binary, None) => shared::get_selected_version(binary, dot_dir),
             _ => Err(INVALID_ARGS_MSG.into()),
         }
     } else {
@@ -95,19 +96,19 @@ fn get_params(mut args: Arguments) -> Result<Params, Box<dyn Error>> {
     let version: Option<String> = args.subcommand()?;
 
     let os = match OS {
-        "linux" => "linux".to_string(),
-        "macos" => "darwin".to_string(),
-        "windows" => "windows".to_string(),
-        os => panic!("Unsupported OS: {}", os),
+        "linux" => "linux",
+        "macos" => "darwin",
+        "windows" => "windows",
+        other => panic!("Unsupported OS: {}", other),
     };
 
     let arch = match ARCH {
         "x86_64" => "amd64",
         "aarch64" => "arm64",
-        arch => panic!("Unsupported architecture: {}", arch),
+        other => panic!("Unsupported architecture: {}", other),
     };
 
-    Ok((action, binary, version, os, arch.to_string()))
+    Ok((action, binary, version, os.to_string(), arch.to_string()))
 }
 
 trait VersionQualifier {
@@ -137,9 +138,10 @@ USAGE:
 
 ACTION:
   l, list               Lists versions
-  i, install            Installs a specific version
-  s, select             Selects an installed version
-  r, remove             Removes an installed version
+  i, install            Installs given version
+  s, select             Selects installed version
+  r, remove             Removes installed version
+  w, which              Prints selected version
 
 BINARY:
   tf, terraform         Terraform (https://www.terraform.io/)
@@ -160,6 +162,7 @@ EXAMPLES:
   terve i tf 0.15.4     Installs terraform 0.15.4
   terve s tf 0.15.4     Selects terraform 0.15.4
   terve r tf 0.15.4     Removes terraform 0.15.4
+  terve w tf            Prints selected terraform version
 ";
 
 const INVALID_ARGS_MSG: &str = "Invalid arguments. Run 'terve --help' for usage";
