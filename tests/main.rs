@@ -41,7 +41,7 @@ fn test_terraform_workflow() {
         .code(1)
         .stderr(starts_with("ERROR: HTTP status client error"));
 
-    // Install a version
+    // Install some version
     terve(&home_dir)
         .arg("i")
         .arg("tf")
@@ -139,14 +139,14 @@ fn test_terraform_workflow() {
             .stdout(contains("Removed terraform 0.14.11"));
     }
 
-    // Assert no version is now selected
+    // Assert same version is still selected
     terve(&home_dir)
         .arg("w")
         .arg("tf")
         .assert()
         .success()
         .code(0)
-        .stdout(is_empty());
+        .stdout(contains("0.14.11"));
 
     // Remove the other version
     terve(&home_dir)
@@ -312,14 +312,14 @@ fn test_terragrunt_workflow() {
             .stdout(contains("Removed terragrunt 0.29.2"));
     }
 
-    // Assert no version is now selected
+    // Assert same version is still selected
     terve(&home_dir)
         .arg("w")
         .arg("tg")
         .assert()
         .success()
         .code(0)
-        .stdout(is_empty());
+        .stdout(contains("0.29.2"));
 
     // Remove the other version
     terve(&home_dir)

@@ -92,7 +92,7 @@ WARNING: terragrunt releases < `0.18.1` do not ship `SHA256SUMS` files, so their
 
 ### Select
 
-Selects a specific version for use. That version must be installed first.
+Selects an installed version for use.
 
 Syntax: `terve s[elect] <binary> <semver>`
 
@@ -101,7 +101,7 @@ Syntax: `terve s[elect] <binary> <semver>`
 
 ### Remove
 
-Removes a specific version. If that version is currently selected, the selection will be reset.
+Removes an installed version. NOTE: does not reset selection
 
 Syntax: `terve r[emove] <binary> <semver>`
 
@@ -110,7 +110,7 @@ Syntax: `terve r[emove] <binary> <semver>`
 
 ### Which
 
-Tells which version is selected.
+Tells which version is currently selected.
 
 Syntax: `terve w[hich] <binary>`
 

@@ -3,11 +3,13 @@ use std::{
     fmt::Display,
     fs::{create_dir_all, hard_link, read_dir, remove_file},
     path::{Path, PathBuf},
+    process::Command,
     str::FromStr,
 };
 
-use crate::utils::{self, is_same_file};
 use semver::{Prerelease, Version};
+
+use crate::utils::{git_list_remote_tags, to_sorted_multiline_string};
 
 pub enum Action {
     List,
@@ -110,13 +112,13 @@ impl DotDir {
 }
 
 pub fn list_available_versions(git_repo_url: &str) -> Result<String, Box<dyn Error>> {
-    let mut versions: Vec<Version> = utils::git_list_remote_tags(git_repo_url)?
+    let mut versions: Vec<Version> = git_list_remote_tags(git_repo_url)?
         .iter()
         .map(|t| t.trim_start_matches('v'))
         .filter_map(|s| Version::parse(s).ok())
         .filter(|v| v.pre == Prerelease::EMPTY)
         .collect();
-    let result = utils::to_sorted_multiline_string(&mut versions);
+    let result = to_sorted_multiline_string(&mut versions);
     Ok(result)
 }
 
@@ -127,7 +129,7 @@ pub fn list_installed_versions(binary: Binary, dot_dir: DotDir) -> Result<String
         .filter_map(|p| Some(p.strip_prefix(&opt_dir).ok()?.to_owned()))
         .filter_map(|p| Version::parse(p.to_string_lossy().as_ref()).ok())
         .collect();
-    let result = utils::to_sorted_multiline_string(&mut installed_versions);
+    let result = to_sorted_multiline_string(&mut installed_versions);
     Ok(result)
 }
 
@@ -142,13 +144,9 @@ pub fn select_binary_version(
     }
     let bin_file_path = dot_dir.bin.join(&binary);
     if bin_file_path.exists() {
-        if !is_same_file(&bin_file_path, &opt_file_path)? {
-            remove_file(&bin_file_path)?;
-            hard_link(&opt_file_path, &bin_file_path)?;
-        }
-    } else {
-        hard_link(&opt_file_path, &bin_file_path)?;
+        remove_file(&bin_file_path)?;
     }
+    hard_link(&opt_file_path, &bin_file_path)?;
     Ok(format!("Selected {} {}", binary, version))
 }
 
@@ -159,39 +157,35 @@ pub fn remove_binary_version(
 ) -> Result<String, Box<dyn Error>> {
     let opt_file_path = dot_dir.opt.join(&binary).join(&version);
     if opt_file_path.exists() {
-        let bin_file_path = dot_dir.bin.join(&binary);
-        if bin_file_path.exists() && is_same_file(&opt_file_path, &bin_file_path)? {
-            remove_file(bin_file_path)?;
-        }
         remove_file(&opt_file_path)?;
     }
     Ok(format!("Removed {} {}", binary, version))
 }
 
-// We use hard links, so we need to compare the executable ~/.terve/bin/<binary>
-// to all ~/.terve/opt/<binary>/<version> files (version is encoded in file name)
 pub fn get_selected_version(binary: Binary, dot_dir: DotDir) -> Result<String, Box<dyn Error>> {
     let bin_file_path = dot_dir.bin.join(&binary);
     let result = if bin_file_path.exists() {
-        let opt_dir_path = dot_dir.opt.join(&binary);
-        find_selected_binary_version(bin_file_path, opt_dir_path)?
+        parse_binary_version(binary, bin_file_path)?
     } else {
         "".to_string()
     };
     Ok(result)
 }
 
-fn find_selected_binary_version(
-    bin_file_path: PathBuf,
-    opt_dir_path: PathBuf,
-) -> Result<String, Box<dyn Error>> {
-    let path: Option<PathBuf> = read_dir(&opt_dir_path)?
-        .filter_map(|r| Some(r.ok()?.path()))
-        .find(|p| is_same_file(&bin_file_path, p).unwrap_or(false));
-    if let Some(p) = path {
-        if let Some(s) = p.file_name() {
-            return Ok(s.to_string_lossy().to_string());
-        }
+fn parse_binary_version(binary: Binary, bin_file_path: PathBuf) -> Result<String, Box<dyn Error>> {
+    let mut cmd = Command::new(&bin_file_path);
+    if let Binary::Terraform = binary {
+        // See https://www.terraform.io/docs/cli/commands/index.html#upgrade-and-security-bulletin-checks
+        cmd.env("CHECKPOINT_DISABLE", "true");
     }
-    Ok("".to_string())
+    let stdout = String::from_utf8(cmd.arg("--version").output()?.stdout)?;
+    let version = stdout
+        .split_whitespace()
+        .filter(|s| s.starts_with('v'))
+        .map(|s| s.trim_start_matches('v'))
+        .find_map(|s| Version::parse(s).ok());
+    match version {
+        Some(v) => Ok(v.to_string()),
+        None => Err(format!("Failed to parse {} version", binary).into()),
+    }
 }
