@@ -1,9 +1,8 @@
 use std::{
     error::Error,
     fmt::Display,
-    fs::{create_dir_all, hard_link, read_dir, remove_file},
+    fs::{create_dir_all, hard_link, read_dir, read_to_string, remove_file, write},
     path::{Path, PathBuf},
-    process::Command,
     str::FromStr,
 };
 
@@ -90,6 +89,7 @@ pub struct DotDir {
     pub bin: PathBuf,
     pub etc: PathBuf,
     pub opt: PathBuf,
+    pub var: PathBuf,
 }
 
 impl DotDir {
@@ -98,15 +98,19 @@ impl DotDir {
         let bin = root.join("bin");
         let etc = root.join("etc");
         let opt = root.join("opt");
+        let var = root.join("var");
         create_dir_all(&bin)?;
         create_dir_all(&etc)?;
         create_dir_all(opt.join(Binary::Terraform))?;
         create_dir_all(opt.join(Binary::Terragrunt))?;
+        create_dir_all(var.join(Binary::Terraform))?;
+        create_dir_all(var.join(Binary::Terragrunt))?;
         Ok(DotDir {
             root,
             bin,
             etc,
             opt,
+            var,
         })
     }
 }
@@ -147,6 +151,8 @@ pub fn select_binary_version(
         remove_file(&bin_file_path)?;
     }
     hard_link(&opt_file_path, &bin_file_path)?;
+    let version_file_path = dot_dir.var.join(&binary).join("version");
+    write(version_file_path, &version)?;
     Ok(format!("Selected {} {}", binary, version))
 }
 
@@ -164,28 +170,11 @@ pub fn remove_binary_version(
 
 pub fn get_selected_version(binary: Binary, dot_dir: DotDir) -> Result<String, Box<dyn Error>> {
     let bin_file_path = dot_dir.bin.join(&binary);
-    let result = if bin_file_path.exists() {
-        parse_binary_version(binary, bin_file_path)?
+    let version_file_path = dot_dir.var.join(&binary).join("version");
+    let result = if bin_file_path.exists() && version_file_path.exists() {
+        read_to_string(version_file_path)?
     } else {
         "".to_string()
     };
     Ok(result)
-}
-
-fn parse_binary_version(binary: Binary, bin_file_path: PathBuf) -> Result<String, Box<dyn Error>> {
-    let mut cmd = Command::new(&bin_file_path);
-    if let Binary::Terraform = binary {
-        // See https://www.terraform.io/docs/cli/commands/index.html#upgrade-and-security-bulletin-checks
-        cmd.env("CHECKPOINT_DISABLE", "true");
-    }
-    let stdout = String::from_utf8(cmd.arg("--version").output()?.stdout)?;
-    let version = stdout
-        .split_whitespace()
-        .filter(|s| s.starts_with('v'))
-        .map(|s| s.trim_start_matches('v'))
-        .find_map(|s| Version::parse(s).ok());
-    match version {
-        Some(v) => Ok(v.to_string()),
-        None => Err(format!("Failed to parse {} version", binary).into()),
-    }
 }
