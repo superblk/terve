@@ -2,7 +2,7 @@
 
 ![Release](https://img.shields.io/github/v/release/superblk/terve)
 ![License](https://img.shields.io/github/license/superblk/terve)
-![OS](https://img.shields.io/badge/os-Linux%20%7C%20MacOS%20%7C%20Windows-ff69b4)
+![OS](https://img.shields.io/badge/os-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4)
 
 Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terragrunt](https://github.com/gruntwork-io/terragrunt/releases) version manager.
 
@@ -47,14 +47,20 @@ All files are kept in directory `~/.terve` like so (example directory tree for L
 │   └── terragrunt
 ├── etc
 │   └── terraform.asc
-└── opt
+├── opt
+│   ├── terraform
+│   │   ├── 0.1.0
+│   │   ├── 1.0.2
+│   │   └── 1.0.3
+│   └── terragrunt
+│       ├── 0.0.4
+│       ├── 0.1.0
+│       └── 0.31.2
+└── var
     ├── terraform
-    │   ├── 0.14.11
-    │   └── 0.15.4
+    │   └── version
     └── terragrunt
-        ├── 0.28.10
-        ├── 0.28.39
-        └── 0.29.4
+        └── version
 ```
 
 ## Usage
@@ -92,7 +98,7 @@ WARNING: terragrunt releases < `0.18.1` do not ship `SHA256SUMS` files, so their
 
 ### Select
 
-Selects a specific version for use. That version must be installed first.
+Selects an installed version for use.
 
 Syntax: `terve s[elect] <binary> <semver>`
 
@@ -101,7 +107,7 @@ Syntax: `terve s[elect] <binary> <semver>`
 
 ### Remove
 
-Removes a specific version. If that version is currently selected, the selection will be reset.
+Removes an installed version. NOTE: does not reset selection
 
 Syntax: `terve r[emove] <binary> <semver>`
 
@@ -110,7 +116,7 @@ Syntax: `terve r[emove] <binary> <semver>`
 
 ### Which
 
-Tells which version is selected.
+Tells which version is currently selected.
 
 Syntax: `terve w[hich] <binary>`
 

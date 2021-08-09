@@ -7,7 +7,6 @@ use std::{
     error::Error,
     fs::File,
     io::{copy, stderr, stdout, Seek, SeekFrom, Write},
-    path::Path,
 };
 
 pub fn check_sha256_sum(mut file: &File, expected_sha256: &str) -> Result<(), Box<dyn Error>> {
@@ -112,16 +111,10 @@ const NEWLINE: &str = "\n";
 #[cfg(windows)]
 const NEWLINE: &str = "\r\n";
 
-pub fn is_same_file(lhs: &Path, rhs: &Path) -> Result<bool, Box<dyn Error>> {
-    // Compare file size first, see https://github.com/BurntSushi/same-file/issues/52
-    let file_size_matches = lhs.metadata()?.len() == rhs.metadata()?.len();
-    Ok(file_size_matches && same_file::is_same_file(lhs, rhs)?)
-}
-
 #[cfg(test)]
 mod tests {
 
-    use std::{fs::read_to_string, path::Path};
+    use std::fs::read_to_string;
 
     use pgp::Deserializable;
 
@@ -205,23 +198,5 @@ mod tests {
     fn test_git_list_remote_tags() {
         let tags = git_list_remote_tags("https://github.com/gruntwork-io/terragrunt").unwrap();
         assert!(tags.contains(&"v0.29.7".to_string()));
-    }
-
-    #[test]
-    fn test_is_same_file_equal() {
-        assert!(is_same_file(
-            Path::new("tests/special.txt"),
-            Path::new("tests/special.txt")
-        )
-        .unwrap());
-    }
-
-    #[test]
-    fn test_is_same_file_not_equal() {
-        assert!(!is_same_file(
-            Path::new("tests/special.txt"),
-            Path::new("tests/hashicorp-72D7468F.asc")
-        )
-        .unwrap());
     }
 }
