@@ -8,6 +8,12 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
 
 ⚠️ this is a new project, and is very subject to change
 
+## Features
+
+- Minimal by design: no shims, but extendable thru scripting
+- SHA256 checksums are checked for terraform and terragrunt binary downloads
+- PGP signatures are checked for terraform binary downloads (if Hashicorp's PGP public key is configured)
+
 ## Supported platforms
 
 - Linux (amd64, arm64)
