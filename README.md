@@ -80,7 +80,7 @@ Managed `<binary>` is `tf` (long form: `terraform`) or `tg` (long form: `terragr
 
 Install, select and remove are idempotent, and can be run multiple times for a version without error.
 
-List remote does not return pre-release versions (e.g. terraform `0.15.0-rc2`), but such versions can be installed/selected/removed (for testing).
+💡 List remote does not return pre-release versions (e.g. terraform `0.15.0-rc2`), but such versions can be installed/selected/removed (for testing).
 
 ### List
 
@@ -105,7 +105,7 @@ Syntax: `terve i[nstall] <binary> <semver>`
 - `terve i tg "$(cat .terragrunt-version)"` installs terragrunt version defined in `.terragrunt-version`
 - `terve l tg r | grep 0.29. | xargs -n1 -P4 terve i tg` installs all available terragrunt 0.29.x versions
 
-WARNING: terragrunt releases < `0.18.1` do not ship `SHA256SUMS` files, so their file integrity cannot be checked
+⚠️ terragrunt releases < `0.18.1` do not ship `SHA256SUMS` files, so their file integrity cannot be checked
 
 ### Select
 
