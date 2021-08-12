@@ -10,9 +10,9 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
 
 ## Features
 
-- Minimal by design: no shims, but extendable thru scripting
+- Minimal by design: no shims, no magic, quiet, but extendable thru scripting
 - SHA256 checksums are checked for terraform and terragrunt binary downloads
-- PGP signatures are checked for terraform binary downloads (if Hashicorp's PGP public key is configured)
+- PGP signatures are checked for terraform binary downloads (if PGP public key is configured)
 
 ## Supported platforms
 
@@ -68,6 +68,11 @@ All files are kept in directory `~/.terve` like so (example directory tree for L
     └── terragrunt
         └── version
 ```
+
+- `bin` – _selected_ terraform and terragrunt binaries (hard-linked to files in `opt`)
+- `etc` – configuration
+- `opt` – _installed_ terraform and terragrunt binaries, version is encoded in file name
+- `var` – variable data, currently only holders for selected version strings
 
 ## Usage
 
