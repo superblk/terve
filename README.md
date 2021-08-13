@@ -12,7 +12,7 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
 
 - Minimal by design: no shims, no magic, quiet, but extendable thru scripting
 - SHA256 checksums are checked for terraform and terragrunt binary downloads
-- PGP signatures are checked for terraform binary downloads (if PGP public key is configured)
+- PGP signatures are checked for terraform binary downloads (if public key is configured)
 
 ## Supported platforms
 
@@ -84,7 +84,7 @@ Install, select and remove are idempotent, and can be run multiple times for a v
 
 ### List
 
-Lists installed or available (remote) versions, sorted latest first (descending).
+Lists installed or available (remote) versions, sorted latest first.
 
 Syntax: `terve l[ist] <binary> [spec]` where `spec` is `r[emote]`
 
@@ -118,12 +118,14 @@ Syntax: `terve s[elect] <binary> <semver>`
 
 ### Remove
 
-Removes an installed version. NOTE: does not reset selection
+Removes an installed version.
 
 Syntax: `terve r[emove] <binary> <semver>`
 
 - `terve r tf 0.12.31` removes terraform version 0.12.31
 - `terve l tf | grep 0.11. | xargs -n1 terve r tf` removes all installed terraform 0.11.x versions
+
+💡 Does not affect current selection
 
 ### Which
 
