@@ -125,7 +125,7 @@ Syntax: `terve r[emove] <binary> <semver>`
 - `terve r tf 0.12.31` removes terraform version 0.12.31
 - `terve l tf | grep 0.11. | xargs -n1 terve r tf` removes all installed terraform 0.11.x versions
 
-💡 Does not affect current selection
+💡 Does not reset current selection
 
 ### Which
 
