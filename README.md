@@ -80,8 +80,6 @@ Managed `<binary>` is `tf` (long form: `terraform`) or `tg` (long form: `terragr
 
 Install, select and remove are idempotent, and can be run multiple times for a version without error.
 
-💡 List remote does not return pre-release versions (e.g. terraform `0.15.0-rc2`), but such versions can be installed/selected/removed (for testing).
-
 ### List
 
 Lists installed or available (remote) versions, sorted latest first.
@@ -92,6 +90,8 @@ Syntax: `terve l[ist] <binary> [spec]` where `spec` is `r[emote]`
 - `terve l tf r` lists available (remote) terraform versions
 - `terve l tf r | tac` lists available terraform versions, _sorted oldest first_
 - `terve l tg r | grep 0.29.` lists available terragrunt 0.29.x versions
+
+💡 List remote does not return pre-release versions (e.g. terraform `0.15.0-rc2`), but such versions can be installed/selected/removed (for testing).
 
 ### Install
 
@@ -125,7 +125,7 @@ Syntax: `terve r[emove] <binary> <semver>`
 - `terve r tf 0.12.31` removes terraform version 0.12.31
 - `terve l tf | grep 0.11. | xargs -n1 terve r tf` removes all installed terraform 0.11.x versions
 
-💡 Does not reset current selection
+💡 Removing a version does not reset current selection
 
 ### Which
 
