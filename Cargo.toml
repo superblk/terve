@@ -1,6 +1,6 @@
 [package]
 name    = "terve"
-version = "0.6.0"
+version = "0.6.1"
 edition = "2018"
 
 [dependencies]
@@ -8,12 +8,12 @@ regex       = "~1.5"
 pico-args   = "~0.4"
 zip         = "~0.5"
 tempfile    = "~3.2"
-dirs        = "~3.0"
+dirs        = "~4.0"
 semver      = "~1.0"
 sha2        = "~0.9"
 hex         = "~0.4"
 pgp         = "~0.7"
-bytes       = "~1.0"
+bytes       = "~1.1"
 
 [dependencies.reqwest]
 version     = "~0.11"
@@ -25,7 +25,7 @@ default-features    = false
 features            = ["https"]
 
 [dev-dependencies]
-assert_cmd  = "~1.0"
+assert_cmd  = "~2.0"
 predicates  = "~2.0"
 same-file   = "~1.0"
 
