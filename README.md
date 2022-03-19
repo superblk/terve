@@ -6,8 +6,6 @@
 
 Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terragrunt](https://github.com/gruntwork-io/terragrunt/releases) version manager.
 
-⚠️ this is a new project, and is very subject to change
-
 ## Features
 
 - Minimal by design: no shims, no magic, quiet, but extendable thru scripting
