@@ -1,16 +1,16 @@
 [package]
 name    = "terve"
-version = "0.6.1"
+version = "0.7.0"
 edition = "2021"
 
 [dependencies]
 regex       = "~1.5"
 pico-args   = "~0.4"
 zip         = "~0.5"
-tempfile    = "~3.2"
+tempfile    = "~3.3"
 dirs        = "~4.0"
 semver      = "~1.0"
-sha2        = "~0.9"
+sha2        = "~0.10"
 hex         = "~0.4"
 pgp         = "~0.7"
 bytes       = "~1.1"
@@ -20,13 +20,13 @@ version     = "~0.11"
 features    = ["blocking"]
 
 [dependencies.git2]
-version             = "~0.13"
+version             = "~0.14"
 default-features    = false
 features            = ["https"]
 
 [dev-dependencies]
 assert_cmd  = "~2.0"
-predicates  = "~2.0"
+predicates  = "~2.1"
 same-file   = "~1.0"
 
 [profile.release]
