@@ -39,6 +39,8 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
 1. Copy Hashicorp's [PGP public key](https://www.hashicorp.com/security) in `~/.terve/etc/terraform.asc` (read-only, mode `0444` on Linux/macOS)
     - This public key is used to verify terraform binary download PGP signatures
     - If not installed (or bad file permissions), terve will log a warning for terraform installs
+1. [Install your desired versions of terraform and terragrunt](#install)
+1. [Select your desired versions of terraform and terragrunt](#select)
 
 ## How it works
 
