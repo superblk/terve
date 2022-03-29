@@ -29,7 +29,7 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
     - On Linux/macOS, file integrity can be checked in the directory where you downloaded the binary and `SHA256SUMS`, like so:
            
            $ ls
-           terve_linux_amd64
+           SHA256SUMS terve_linux_amd64
            $ sha256sum -c --ignore-missing 2>/dev/null SHA256SUMS
            terve_linux_amd64: OK
     
