@@ -26,8 +26,10 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
 ## Setup
 
 1. [Download](https://github.com/superblk/terve/releases/latest) terve for your platform, check `SHA256SUMS`, and install in `PATH`, e.g. `/usr/local/bin/terve`
-    - On Linux/macOS, file integrity can be checked like so
-        
+    - On Linux/macOS, file integrity can be checked in the directory where you downloaded the binary and `SHA256SUMS`, like so:
+           
+           $ ls
+           SHA256SUMS terve_linux_amd64
            $ sha256sum -c --ignore-missing 2>/dev/null SHA256SUMS
            terve_linux_amd64: OK
     
@@ -37,6 +39,8 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
 1. Copy Hashicorp's [PGP public key](https://www.hashicorp.com/security) in `~/.terve/etc/terraform.asc` (read-only, mode `0444` on Linux/macOS)
     - This public key is used to verify terraform binary download PGP signatures
     - If not installed (or bad file permissions), terve will log a warning for terraform installs
+1. [Install your desired versions of terraform and terragrunt](#install)
+1. [Select your desired versions of terraform and terragrunt](#select)
 
 ## How it works
 
