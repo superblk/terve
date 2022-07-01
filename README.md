@@ -144,7 +144,24 @@ $ terve w tf
 
 Install these scripts into `~/.terve/bin` to make use of them.
 
-### terve-use (Linux and macOS)
+### Terraform switch (Linux and macOS)
+
+Simple switch to specified terraform version.
+
+```sh
+function tfv {
+  local version="$1"
+  if [ -z "$version" ]; then
+    echo "Usage: tfv <version>, e.g. tfv 1.2.3"
+    return 1
+  fi
+  terve i tf "$version" >/dev/null && \
+  terve s tf "$version" >/dev/null && \
+  echo "Switched to terraform $version"
+}
+```
+
+### Terra(form|grunt) use (Linux and macOS)
 
 Use terraform and terragrunt versions defined in `.terraform-version` and `.terragrunt-version` (in current working directory or any parent directory)
 
