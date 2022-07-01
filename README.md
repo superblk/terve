@@ -142,8 +142,6 @@ $ terve w tf
 
 ## Optional shell extensions
 
-Install these scripts into `~/.terve/bin` to make use of them.
-
 ### Terraform switch (Linux and macOS)
 
 Simple switch to specified terraform version.
