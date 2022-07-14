@@ -10,18 +10,17 @@ Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terra
 
 - Minimal by design: no shims, no magic, quiet, but extendable thru scripting
 - SHA256 checksums are checked for terraform and terragrunt binary downloads
-- PGP signatures are checked for terraform binary downloads (if public key is configured)
+- PGP signatures are checked for terraform binary downloads (if Hashicorp's public key is configured)
 
 ## Supported platforms
 
 - Linux (amd64, arm64)
-  - NOTE: only terraform `0.11.15`, `0.12.{30,31}`, `0.13.5+` and terragrunt `0.28.12+` ship linux arm64 binaries
-- MacOS (amd64)
+    - NOTE: only terraform `0.11.15`, `0.12.{30,31}`, `0.13.5+` and terragrunt `0.28.12+` ship linux arm64 binaries
+- macOS (amd64, arm64)
+    - NOTE: only terraform `1.1.0+` and terragrunt `0.28.12+` ship macOS arm64 binaries
 - Windows (amd64)
 
-💡 OpenSSL 1.1 is required on Linux and macOS
-
-⚠️ Automated tests are not run for arm64 builds (GitHub-hosted runners do not currently support arm64)
+⚠️ A pre-built terve binary is not yet available for macOS arm64, because Apple M1-based GitHub runners are not yet available, see this [issue](https://github.com/actions/virtual-environments/issues/2187)
 
 ## Setup
 
@@ -181,12 +180,12 @@ tf_version="$(upcat .terraform-version)"
 tg_version="$(upcat .terragrunt-version)"
 
 if [ -z "$tf_version" ]; then
-    echo "ERROR: No .terraform-version found"
+    echo "ERROR: No .terraform-version file found"
     exit 1
 fi
 
 if [ -z "$tg_version" ]; then
-    echo "ERROR: No .terragrunt-version found"
+    echo "ERROR: No .terragrunt-version file found"
     exit 2
 fi
 
