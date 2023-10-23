@@ -4,6 +4,8 @@
 ![License](https://img.shields.io/github/license/superblk/terve)
 ![OS](https://img.shields.io/badge/os-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4)
 
+⚠️ This tool is deprecated and is no longer maintained. Use e.g. [asdf](https://github.com/asdf-vm/asdf) or [tfenv](https://github.com/tfutils/tfenv) + [tgenv](https://github.com/tgenv/tgenv) instead.
+
 Unified, minimal [terraform](https://www.terraform.io/downloads.html) and [terragrunt](https://github.com/gruntwork-io/terragrunt/releases) version manager.
 
 ## Features
